@@ -98,10 +98,12 @@ def predict(image, label, weight):
 if __name__ == "__main__":
     # Load data
     if ('trainingImages' not in globals()):
-        trainingImages = np.load("mnist_train_images.npy")
-        trainingLabels = np.load("mnist_train_labels.npy")
-        testingImages = np.load("mnist_test_images.npy")
-        testingLabels = np.load("mnist_test_labels.npy")
+        trainingImages = np.load("datasets/mnist_train_images.npy")
+        trainingLabels = np.load("datasets/mnist_train_labels.npy")
+        validationImages = np.load("datasets/mnist_validation_images.npy")
+        validationLabels = np.load("datasets/mnist_validation_labels.npy")
+        testingImages = np.load("datasets/mnist_test_images.npy")
+        testingLabels = np.load("datasets/mnist_test_labels.npy")
 
     import time
     start = time.time()
