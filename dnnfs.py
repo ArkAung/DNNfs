@@ -2,6 +2,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 def softmax(images, weights):
     """
     :param images: samples x dimension input images matrix
@@ -14,7 +15,18 @@ def softmax(images, weights):
     return ans
 
 
-def J(w, images, labels, alpha=0.):
+def relu(images, weights):
+    """
+    :param images: samples x dimension input images matrix
+    :param weights: dimension x classes weights matrix
+    :return: samples x classes matrix
+    """
+    z = images.dot(weights)
+    z[z < 0] = 0
+    return z
+
+
+def J(w1, w2, images, labels, alpha=0.):
     """
     :param w: dimensions x classes weight matrix
     :param images: samples x dimensions images matrix
@@ -29,9 +41,19 @@ def J(w, images, labels, alpha=0.):
     pred = softmax(x, w)
     cost_mat = np.multiply(y, np.log(pred + small_constant))
     cost = (-1. / m) * np.sum(np.sum(cost_mat, axis=1))
-    cost += (alpha/(2*m)) * np.linalg.norm(w)
+    cost += (alpha / (2 * m)) * np.linalg.norm(w)
     return cost
 
+
+def gradJ_w1(w, images, labels, alpha=0.):
+    
+    return None
+
+def gradJ_w2(w, images, labels, alpha=0.):
+    x = images
+    y = labels
+    y_hat = x.Dot(w)
+    return (y_hat - y).dot(w.T)
 
 def gradJ(w, images, labels, alpha=0.):
     """
@@ -46,8 +68,8 @@ def gradJ(w, images, labels, alpha=0.):
     m = x.shape[0]
 
     pred = softmax(x, w)
-    grad = (1./m) * np.dot((pred - y).T, x)
-    grad += (alpha/m) * w.T
+    grad = (1. / m) * np.dot((pred - y).T, x)
+    grad += (alpha / m) * w.T
     return grad.T
 
 
@@ -58,30 +80,37 @@ def gradientDescent(trainingimages, trainingLabels, alpha=0.):
     classes = y.shape[1]
     cost_history = np.array([])
     epsilon = 0.9
-    #w = np.random.rand(dimensions, classes)
-    w = np.zeros((dimensions, classes))
+
+    w1 = np.random.rand(dimensions, h_nodes)
+    w2 = np.random.rand(h_nodes, classes)
+
+    # w = np.zeros((dimensions, classes))
     iterations = 300
 
     for i in xrange(iterations):
-        newgrad = gradJ(w, x, y, alpha)
-        w -= (epsilon * newgrad)
-        cost = J(w, x, y, alpha)
+        gradw1 = gradJ_w1(w1, x, y, alpha)
+        gradw2 = gradJ_w2(w2, x, y, alpha)
+
+        w1 -= (epsilon * gradw1)
+        w2 -= (epsilon * gradw2)
+
+        cost = J(w1, w2, x, y, alpha)
         cost_history = np.append(cost_history, cost)
         if i % 10 == 0:
-            print "Iteration: ", i, " Cost: ", cost, "||w|| :", np.linalg.norm(w)
+            print "Iteration: ", i, " Cost: ", cost, "||w1|| :", np.linalg.norm(w1), , "||w2|| :", np.linalg.norm(w2)
 
-    plt.plot(np.linspace(1, iterations, iterations), cost_history, label="Training Cost")
-    plt.legend()
-    plt.ylabel('Training Cost')
-    plt.xlabel('Iterations')
-    plt.title("Cross-entropy loss values")
-    plt.show()
-    return w
+    # plt.plot(np.linspace(1, iterations, iterations), cost_history, label="Training Cost")
+    # plt.legend()
+    # plt.ylabel('Training Cost')
+    # plt.xlabel('Iterations')
+    # plt.title("Cross-entropy loss values")
+    # plt.show()
+    return w1, w2
 
 
-def reportCosts(w, trainingimages, trainingLabels, testingimages, testingLabels, alpha=0.):
-    print "Training cost: {}".format(J(w, trainingimages, trainingLabels, alpha))
-    print "Testing cost:  {}".format(J(w, testingimages, testingLabels, alpha))
+def reportCosts(w1, w2, trainingimages, trainingLabels, testingimages, testingLabels, alpha=0.):
+    print "Training cost: {}".format(J(w1, w2, trainingimages, trainingLabels, alpha))
+    print "Testing cost:  {}".format(J(w1, w2, testingimages, testingLabels, alpha))
 
 
 def report_accuracy(images, labels):
@@ -105,14 +134,15 @@ if __name__ == "__main__":
         testingImages = np.load("datasets/mnist_test_images.npy")
         testingLabels = np.load("datasets/mnist_test_labels.npy")
 
+    h_nodes = 30
     import time
     start = time.time()
     alpha = 1e2
-    w = gradientDescent(trainingImages, trainingLabels, alpha)
-    reportCosts(w, trainingImages, trainingLabels, testingImages, testingLabels)
-    print "Accuracy is", report_accuracy(testingImages, testingLabels), "%"
-    dt = int(time.time() - start)
-    print("Execution time %d sec" % dt)
+    w1, w2 = gradientDescent(trainingImages, trainingLabels, alpha)
+    reportCosts(w1, w2, trainingImages, trainingLabels, testingImages, testingLabels)
+    # print "Accuracy is", report_accuracy(testingImages, testingLabels), "%"
+    # dt = int(time.time() - start)
+    # print("Execution time %d sec" % dt)
 
     # testw = np.ndarray.flatten(w)
     # from scipy.optimize import check_grad
