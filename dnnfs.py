@@ -3,26 +3,20 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def softmax(images, weights):
-    """
-    :param images: samples x dimension input images matrix
-    :param weights: dimension x classes weights matrix
-    :return: samples x classes matrix
-    """
-    z = images.dot(weights)  # samples x classes
+def softmax(z):
     z -= np.max(z, axis=1, keepdims=True)
     ans = np.exp(z) / np.sum(np.exp(z), axis=1, keepdims=True)
     return ans
 
 
-def relu(images, weights):
-    """
-    :param images: samples x dimension input images matrix
-    :param weights: dimension x classes weights matrix
-    :return: samples x classes matrix
-    """
-    z = images.dot(weights)
+def relu(z):
     z[z < 0] = 0
+    return z
+
+
+def relu_prime(z):
+    z[z <= 0] = 0
+    z[z > 0] = 1
     return z
 
 
@@ -34,26 +28,39 @@ def J(w1, w2, images, labels, alpha=0.):
     :param alpha: regularization term
     :return:
     """
+    # x = images
+    # y = labels
+    # m = x.shape[0]
+    # small_constant = 0
+    # pred = softmax(x, w)
+    # cost_mat = np.multiply(y, np.log(pred + small_constant))
+    # cost = (-1. / m) * np.sum(np.sum(cost_mat, axis=1))
+    # cost += (alpha / (2 * m)) * np.linalg.norm(w)
+    return 0
+
+
+def feedforward(w1, w2, images, labels, aplha=.0):
+    x = images
+    h1 = relu(x.dot(w1))
+    y_hat = softmax(h1.dot(w2))
+    return h1, y_hat
+
+
+def gradJ_w1(w, g_w2, images, labels, alpha=0.):
     x = images
     y = labels
-    m = x.shape[0]
-    small_constant = 0
-    pred = softmax(x, w)
-    cost_mat = np.multiply(y, np.log(pred + small_constant))
-    cost = (-1. / m) * np.sum(np.sum(cost_mat, axis=1))
-    cost += (alpha / (2 * m)) * np.linalg.norm(w)
-    return cost
-
-
-def gradJ_w1(w, images, labels, alpha=0.):
+    g = g_w2 * relu_prime(x.dot(w)) #get the results calculated up to w2
+    block_x = g_w2.reshape(g_w2.shape[0] * g_w2.shape[1],) #vectorize the w_2 matrix
     
     return None
+
 
 def gradJ_w2(w, images, labels, alpha=0.):
     x = images
     y = labels
-    y_hat = x.Dot(w)
+    y_hat = softmax(x,w)
     return (y_hat - y).dot(w.T)
+
 
 def gradJ(w, images, labels, alpha=0.):
     """
@@ -88,8 +95,8 @@ def gradientDescent(trainingimages, trainingLabels, alpha=0.):
     iterations = 300
 
     for i in xrange(iterations):
-        gradw1 = gradJ_w1(w1, x, y, alpha)
         gradw2 = gradJ_w2(w2, x, y, alpha)
+        gradw1 = gradJ_w1(w1, gradw2, x, y, alpha)
 
         w1 -= (epsilon * gradw1)
         w2 -= (epsilon * gradw2)
@@ -97,7 +104,7 @@ def gradientDescent(trainingimages, trainingLabels, alpha=0.):
         cost = J(w1, w2, x, y, alpha)
         cost_history = np.append(cost_history, cost)
         if i % 10 == 0:
-            print "Iteration: ", i, " Cost: ", cost, "||w1|| :", np.linalg.norm(w1), , "||w2|| :", np.linalg.norm(w2)
+            print "Iteration: ", i, " Cost: ", cost, "||w1|| :", np.linalg.norm(w1), "||w2|| :", np.linalg.norm(w2)
 
     # plt.plot(np.linspace(1, iterations, iterations), cost_history, label="Training Cost")
     # plt.legend()
@@ -113,9 +120,9 @@ def reportCosts(w1, w2, trainingimages, trainingLabels, testingimages, testingLa
     print "Testing cost:  {}".format(J(w1, w2, testingimages, testingLabels, alpha))
 
 
-def report_accuracy(images, labels):
-    acc = np.mean(np.argmax(images.dot(w), axis=1) == np.argmax(labels, axis=1))
-    return acc * 100
+# def report_accuracy(images, labels):
+#     acc = np.mean(np.argmax(images.dot(w), axis=1) == np.argmax(labels, axis=1))
+#     return acc * 100
 
 
 def predict(image, label, weight):
@@ -139,7 +146,7 @@ if __name__ == "__main__":
     start = time.time()
     alpha = 1e2
     w1, w2 = gradientDescent(trainingImages, trainingLabels, alpha)
-    reportCosts(w1, w2, trainingImages, trainingLabels, testingImages, testingLabels)
+#   reportCosts(w1, w2, trainingImages, trainingLabels, testingImages, testingLabels)
     # print "Accuracy is", report_accuracy(testingImages, testingLabels), "%"
     # dt = int(time.time() - start)
     # print("Execution time %d sec" % dt)
