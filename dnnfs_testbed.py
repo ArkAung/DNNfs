@@ -41,7 +41,7 @@ def J(w1, w2, images, labels, alpha=0.):
 
 def feedforward(w1, w2, images, labels, aplha=.0):
     x = images
-    h1 = relu(x.dot(w1))
+    h1 = relu(x.dot(w1.T))
     y_hat = softmax(h1.dot(w2.T))
     return h1, y_hat
 
@@ -57,7 +57,7 @@ def gradJ_w1(h1, y_hat, w_1, w_2, images, labels, alpha=0.):
     x = images
     y = labels
     dJ_dh1 = (y_hat - y).dot(w_2)
-    g = dJ_dh1 * relu_prime(x.dot(w_1))
+    g = dJ_dh1 * relu_prime(x.dot(w_1.T))
     # vec_input = x.reshape(x.shape[0] * x.shape[1], )
     return g.T.dot(x)
 
@@ -88,25 +88,29 @@ def gradientDescent(trainingimages, trainingLabels, alpha=0.):
     cost_history = np.array([])
     epsilon = 1e-5
 
-    w1 = np.random.rand(dimensions, h_nodes)  # TODO: Find the best distribution for generating random initial weights
-    w2 = np.random.rand(classes, h_nodes)
+    h_nodes = 30
+
+    mu, sigma = 0, 0.1
+    w1 = np.random.normal(mu, sigma, (h_nodes, dimensions))
+    w2 = np.random.normal(mu, sigma, (classes, h_nodes))
 
     # w = np.zeros((dimensions, classes))
-    iterations = 300
+    iterations = 10
 
     # # TODO: design the program so that the gradJ_wi is a single function and takes in a single argument which is an np-array of hidden layer outputs and y_hat output
-    # for i in xrange(iterations):
-    h1, y_hat = feedforward(w1, w2, x, y)  # Do feedforward pass
-    gradw2 = gradJ_w2(h1, y_hat, x, y)
-    w2 -= (epsilon * gradw2)
-    gradw1 = gradJ_w1(h1, y_hat, w1, w2, x, y)
-    w1 -= (epsilon * gradw1.T)
-        #
+    for i in xrange(iterations):
+        h1, y_hat = feedforward(w1, w2, x, y)  # Do feedforward pass
+        gradw2 = gradJ_w2(h1, y_hat, x, y)
+        w2 -= (epsilon * gradw2)
+        gradw1 = gradJ_w1(h1, y_hat, w1, w2, x, y)
+        w1 -= (epsilon * gradw1)
+
         # cost = J(w1, w2, x, y, alpha)
         # cost_history = np.append(cost_history, cost)
         # if i % 10 == 0:
         #     print "Iteration: ", i, " Cost: ", cost, "||w1|| :", np.linalg.norm(w1), "||w2|| :", np.linalg.norm(w2)
-
+        if i % 2 == 0:
+            print "Iteration: ", i, "||w1|| :", np.linalg.norm(w1), "||w2|| :", np.linalg.norm(w2)
     # plt.plot(np.linspace(1, iterations, iterations), cost_history, label="Training Cost")
     # plt.legend()
     # plt.ylabel('Training Cost')
@@ -142,7 +146,7 @@ if __name__ == "__main__":
         testingImages = np.load("datasets/mnist_test_images.npy")
         testingLabels = np.load("datasets/mnist_test_labels.npy")
 
-    h_nodes = 30
+
     import time
 
     start = time.time()
