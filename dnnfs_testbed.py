@@ -81,14 +81,16 @@ def gradJ(w, images, labels, alpha=0.):
 
 
 def gradientDescent(trainingimages, trainingLabels, alpha=0.):
-    x = trainingimages
-    y = trainingLabels
+    x = trainingimages[1]
+    y = trainingLabels[1]
+
     dimensions = x.shape[1]
     classes = y.shape[1]
     cost_history = np.array([])
     epsilon = 1e-5
 
     h_nodes = 30
+    batch_size = 500
 
     mu, sigma = 0, 0.1
     w1 = np.random.normal(mu, sigma, (h_nodes, dimensions))
@@ -146,16 +148,14 @@ if __name__ == "__main__":
         testingImages = np.load("datasets/mnist_test_images.npy")
         testingLabels = np.load("datasets/mnist_test_labels.npy")
 
-
     import time
-
     start = time.time()
-    alpha = 1e2
+    alpha = 0
     w1, w2 = gradientDescent(trainingImages, trainingLabels, alpha)
 # reportCosts(w1, w2, trainingImages, trainingLabels, testingImages, testingLabels)
 # print "Accuracy is", report_accuracy(testingImages, testingLabels), "%"
-# dt = int(time.time() - start)
-# print("Execution time %d sec" % dt)
+    dt = int(time.time() - start)
+    print("Execution time %d sec" % dt)
 
 # testw = np.ndarray.flatten(w)
 # from scipy.optimize import check_grad
