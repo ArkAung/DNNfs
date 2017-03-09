@@ -1,5 +1,3 @@
-% matplotlib
-inline
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.pyplot as plt
@@ -92,7 +90,7 @@ def gradientDescent(trainingimages, trainingLabels, alpha=0.):
     cost_history = np.array([])
     epsilon = 1e-5
 
-    batch_size = 500
+    batch_size = 200
     h_nodes = 20
     epochs = 50
 
@@ -107,8 +105,8 @@ def gradientDescent(trainingimages, trainingLabels, alpha=0.):
         x_s = x_y[:, :dimensions]
         y_s = x_y[:, dimensions:]
         for i in xrange(num_batches):
-            start = i * num_batches
-            end = start + (batch_size - 1)
+            start = i * batch_size
+            end = start + batch_size
             x_batch = x_s[start:end]
             y_batch = y_s[start:end]
             h1, y_hat = feedforward(w1, w2, x_batch, y_batch)  # Do feedforward pass
