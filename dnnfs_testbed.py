@@ -47,11 +47,26 @@ def feedforward(w1, w2, b1, b2, images, labels, aplha=.0):
     y_hat = softmax(h1.dot(w2.T) + b2)
     return h1, y_hat
 
-def gradJ_b1():
-    return None
 
-def gradJ_b2():
-    return None
+
+def grad_layer2(h1, y_hat, images, labels, alpha=0.):
+    x = images
+    y = labels
+    h2 = (y_hat - y)
+    dJ_dw2 = h2.T.dot(h1)
+    dJ_b2 = h2
+    return dJ_dw2, dJ_b2
+
+
+def grad_layer1(h1, y_hat, w_1, w_2, images, labels, alpha=0.):
+    x = images
+    y = labels
+    dJ_dh1 = (y_hat - y).dot(w_2)
+    g = dJ_dh1 * relu_prime(x.dot(w_1.T))
+    dJ_dw1 = g.T.dot(x)
+    dJ_db1 = g
+    return dJ_dw1, dJ_db1
+
 
 def gradJ_w2(h1, y_hat, images, labels, alpha=0.):
     x = images
@@ -83,9 +98,9 @@ def gradientDescent(trainingimages, trainingLabels, alpha=0.):
 
     mu, sigma = 0, 0.1
     w1 = np.random.normal(mu, sigma, (h_nodes, dimensions))
-    b1 = np.zeros((1, dimensions))
+    b1 = np.ones((1, h_nodes))
     w2 = np.random.normal(mu, sigma, (classes, h_nodes))
-    b2 = np.zeros((classes, 1))
+    b2 = np.ones((1, classes))
 
     num_batches = sample_size / batch_size
     for e in xrange(epochs):
@@ -98,11 +113,15 @@ def gradientDescent(trainingimages, trainingLabels, alpha=0.):
             end = start + batch_size
             x_batch = x_s[start:end]
             y_batch = y_s[start:end]
-            h1, y_hat = feedforward(w1, w2, x_batch, y_batch)  # Do feedforward pass
-            gradw2 = gradJ_w2(h1, y_hat, x_batch, y_batch)
+            h1, y_hat = feedforward(w1, w2, b1, b2, x_batch, y_batch)  # Do feedforward pass
+            # gradw2 = gradJ_w2(h1, y_hat, x_batch, y_batch)
+            gradw2, gradb2 = grad_layer2(h1, y_hat, x_batch, y_batch)
             w2 -= (epsilon * gradw2)
-            gradw1 = gradJ_w1(h1, y_hat, w1, w2, x_batch, y_batch)
+            b2 -= (epsilon * gradb2)
+            # gradw1 = gradJ_w1(h1, y_hat, w1, w2, x_batch, y_batch)
+            gradw1, gradb1 = grad_layer1(h1, y_hat, w1, w2, x_batch, y_batch)
             w1 -= (epsilon * gradw1)
+            b1 -= (epsilon * gradb1)
 
             cost = J(y_hat, x_batch, y_batch, alpha)
             cost_history = np.append(cost_history, cost)
