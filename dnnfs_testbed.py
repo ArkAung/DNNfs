@@ -30,7 +30,7 @@ def J(y_hat, images, labels, alpha=0.):
     return cost
 
 
-def J2(w1, w2, images, labels, alpha=0.):
+def J2(w1, w2, images, labels, alpha=0.): # TODO: Temp scaffold, remove this later on merge with the above function
     x = images
     y = labels
     m = x.shape[0]
@@ -41,12 +41,17 @@ def J2(w1, w2, images, labels, alpha=0.):
     return cost
 
 
-def feedforward(w1, w2, images, labels, aplha=.0):
+def feedforward(w1, w2, b1, b2, images, labels, aplha=.0):
     x = images
-    h1 = relu(x.dot(w1.T))
-    y_hat = softmax(h1.dot(w2.T))
+    h1 = relu(x.dot(w1.T) + b1)
+    y_hat = softmax(h1.dot(w2.T) + b2)
     return h1, y_hat
 
+def gradJ_b1():
+    return None
+
+def gradJ_b2():
+    return None
 
 def gradJ_w2(h1, y_hat, images, labels, alpha=0.):
     x = images
@@ -61,24 +66,6 @@ def gradJ_w1(h1, y_hat, w_1, w_2, images, labels, alpha=0.):
     g = dJ_dh1 * relu_prime(x.dot(w_1.T))
     # vec_input = x.reshape(x.shape[0] * x.shape[1], )
     return g.T.dot(x)
-
-
-def gradJ(w, images, labels, alpha=0.):
-    """
-    :param w: dimension x classes weights matrix
-    :param images: samples x dimensions images matrix
-    :param labels: samples x classes target matrix
-    :param alpha: regularization term
-    :return: dimensions x classes matrix
-    """
-    x = images
-    y = labels
-    m = x.shape[0]
-
-    pred = softmax(x, w)
-    grad = (1. / m) * np.dot((pred - y).T, x)
-    grad += (alpha / m) * w.T
-    return grad.T
 
 
 def gradientDescent(trainingimages, trainingLabels, alpha=0.):
@@ -96,7 +83,9 @@ def gradientDescent(trainingimages, trainingLabels, alpha=0.):
 
     mu, sigma = 0, 0.1
     w1 = np.random.normal(mu, sigma, (h_nodes, dimensions))
+    b1 = np.zeros((1, dimensions))
     w2 = np.random.normal(mu, sigma, (classes, h_nodes))
+    b2 = np.zeros((classes, 1))
 
     num_batches = sample_size / batch_size
     for e in xrange(epochs):
