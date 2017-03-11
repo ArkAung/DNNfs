@@ -150,9 +150,10 @@ def report_accuracy(w1, w2, b1, b2, images, labels):
     return acc * 100
 
 
-def predict(image, label, weight):
-    predicted = np.argmax(image.dot(weight))
-    real = np.argmax(label)
+def predict(images, labels, w1, w2, b1, b2):
+    h1, y_hat = feedforward(w1, w2, b1, b2, images, labels)
+    predicted = np.argmax(y_hat)
+    real = np.argmax(labels)
     return predicted, real
 
 
