@@ -90,10 +90,10 @@ def gradientDescent(trainingimages, trainingLabels, alpha=0.):
     classes = y.shape[1]
     sample_size = x.shape[0]
     cost_history = np.array([])
-    epsilon = 1e-5
+    epsilon = 0.0005
 
-    batch_size = 200
-    h_nodes = 20
+    batch_size = 16
+    h_nodes = 30
     epochs = 50
 
     mu, sigma = 0, 0.1
