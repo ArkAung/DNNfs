@@ -34,14 +34,14 @@ def J2(w1, w2, b1, b2, images, labels, alpha=0.): # TODO: Temp scaffold, remove 
     x = images
     y = labels
     m = x.shape[0]
-    h1, y_hat = feedforward(w1, w2, x, y, b1, b2)
+    h1, y_hat = feedforward(w1, w2, b1, b2, x, y)
     cost_mat = np.multiply(y, np.log(y_hat))
     cost = (-1. / m) * np.sum(np.sum(cost_mat, axis=1))
     #     cost += (alpha / (2 * m)) * np.linalg.norm(w)
     return cost
 
 
-def feedforward(w1, w2, b1, b2, images, labels, aplha=.0):
+def feedforward(w1, w2, b1, b2, images, labels, alpha=.0):
     x = images
     h1 = relu(x.dot(w1.T) + b1)
     y_hat = softmax(h1.dot(w2.T) + b2)
@@ -94,14 +94,14 @@ def gradientDescent(trainingimages, trainingLabels, alpha=0.):
 
     batch_size = 200
     h_nodes = 20
-    epochs = 5
+    epochs = 50
 
     mu, sigma = 0, 0.1
     w1 = np.random.normal(mu, sigma, (h_nodes, dimensions))
     # TODO: ask professor whether using batch_size here is the right way (probably not)
-    b1 = np.zeros((1, h_nodes))
+    b1 = np.ones((1, h_nodes))
     w2 = np.random.normal(mu, sigma, (classes, h_nodes))
-    b2 = np.zeros((1, classes))
+    b2 = np.ones((1, classes))
 
     num_batches = sample_size / batch_size
     for e in xrange(epochs):
@@ -172,7 +172,7 @@ if __name__ == "__main__":
     alpha = 1e2
     w1, w2, b1, b2 = gradientDescent(trainingImages, trainingLabels, alpha)
 
-    # reportCosts(w1, w2, b1, b2, trainingImages, trainingLabels, validationImages, validationLabels)
+    reportCosts(w1, w2, b1, b2, trainingImages, trainingLabels, validationImages, validationLabels)
     print "Accuracy is", report_accuracy(w1, w2, b1, b2, validationImages, validationLabels), "%"
     dt = int(time.time() - start)
     print("Execution time %d sec" % dt)
