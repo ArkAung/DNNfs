@@ -1,0 +1,2 @@
+batch size, hidden nodes, epochs, accuracy, train cost, validation cost, test cost
+1000, 30, 200, 92.39, 0.272725523696, 0.258780010806, 0.261622675117
