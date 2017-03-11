@@ -30,11 +30,11 @@ def J(y_hat, images, labels, alpha=0.):
     return cost
 
 
-def J2(w1, w2, images, labels, alpha=0.): # TODO: Temp scaffold, remove this later on merge with the above function
+def J2(w1, w2, b1, b2, images, labels, alpha=0.): # TODO: Temp scaffold, remove this later on merge with the above function
     x = images
     y = labels
     m = x.shape[0]
-    h1, y_hat = feedforward(w1, w2, x, y)
+    h1, y_hat = feedforward(w1, w2, x, y, b1, b2)
     cost_mat = np.multiply(y, np.log(y_hat))
     cost = (-1. / m) * np.sum(np.sum(cost_mat, axis=1))
     #     cost += (alpha / (2 * m)) * np.linalg.norm(w)
@@ -94,13 +94,14 @@ def gradientDescent(trainingimages, trainingLabels, alpha=0.):
 
     batch_size = 200
     h_nodes = 20
-    epochs = 50
+    epochs = 5
 
     mu, sigma = 0, 0.1
     w1 = np.random.normal(mu, sigma, (h_nodes, dimensions))
-    b1 = np.ones((1, h_nodes))
+    # TODO: ask professor whether using batch_size here is the right way (probably not)
+    b1 = np.zeros((1, h_nodes))
     w2 = np.random.normal(mu, sigma, (classes, h_nodes))
-    b2 = np.ones((1, classes))
+    b2 = np.zeros((1, classes))
 
     num_batches = sample_size / batch_size
     for e in xrange(epochs):
@@ -117,34 +118,34 @@ def gradientDescent(trainingimages, trainingLabels, alpha=0.):
             # gradw2 = gradJ_w2(h1, y_hat, x_batch, y_batch)
             gradw2, gradb2 = grad_layer2(h1, y_hat, x_batch, y_batch)
             w2 -= (epsilon * gradw2)
-            b2 -= (epsilon * gradb2)
+            b2 -= (epsilon * np.sum(gradb2, axis=0, keepdims=True))
             # gradw1 = gradJ_w1(h1, y_hat, w1, w2, x_batch, y_batch)
             gradw1, gradb1 = grad_layer1(h1, y_hat, w1, w2, x_batch, y_batch)
             w1 -= (epsilon * gradw1)
-            b1 -= (epsilon * gradb1)
+            b1 -= (epsilon * np.sum(gradb1, axis=0, keepdims=True))
 
             cost = J(y_hat, x_batch, y_batch, alpha)
-            cost_history = np.append(cost_history, cost)
 
+        cost_history = np.append(cost_history, cost)
         if e % 2 == 0:
             print "Epochs: ", e, "Cost: ", cost, "||w1|| :", np.linalg.norm(w1), "||w2|| :", np.linalg.norm(w2)
 
-    plt.plot(np.linspace(1, epochs * num_batches, epochs * num_batches), cost_history, label="Training Cost")
+    plt.plot(np.linspace(1, epochs, epochs), cost_history, label="Training Cost")
     plt.legend()
     plt.ylabel('Training Cost')
-    plt.xlabel('Epochs * Batches')
+    plt.xlabel('Epochs')
     plt.title("Cross-entropy loss values")
     plt.show()
-    return w1, w2
+    return w1, w2, b1, b2
 
 
-def reportCosts(w1, w2, trainingimages, trainingLabels, testingimages, testingLabels, alpha=0.):
-    print "Training cost: {}".format(J2(w1, w2, trainingimages, trainingLabels, alpha))
-    print "Testing cost:  {}".format(J2(w1, w2, testingimages, testingLabels, alpha))
+def reportCosts(w1, w2, b1, b2, trainingimages, trainingLabels, testingimages, testingLabels, alpha=0.):
+    print "Training cost: {}".format(J2(w1, w2, b1, b2, trainingimages, trainingLabels, alpha))
+    print "Testing cost:  {}".format(J2(w1, w2, b1, b2, testingimages, testingLabels, alpha))
 
 
-def report_accuracy(w1, w2, images, labels):
-    h1, y_hat = feedforward(w1, w2, images, labels)
+def report_accuracy(w1, w2, b1, b2, images, labels):
+    h1, y_hat = feedforward(w1, w2, b1, b2, images, labels)
     acc = np.mean(np.argmax(y_hat, axis=1) == np.argmax(labels, axis=1))
     return acc * 100
 
@@ -169,10 +170,10 @@ if __name__ == "__main__":
 
     start = time.time()
     alpha = 1e2
-    w1, w2 = gradientDescent(trainingImages, trainingLabels, alpha)
+    w1, w2, b1, b2 = gradientDescent(trainingImages, trainingLabels, alpha)
 
-    reportCosts(w1, w2, trainingImages, trainingLabels, validationImages, validationLabels)
-    print "Accuracy is", report_accuracy(w1, w2, validationImages, validationLabels), "%"
+    # reportCosts(w1, w2, b1, b2, trainingImages, trainingLabels, validationImages, validationLabels)
+    print "Accuracy is", report_accuracy(w1, w2, b1, b2, validationImages, validationLabels), "%"
     dt = int(time.time() - start)
     print("Execution time %d sec" % dt)
 
