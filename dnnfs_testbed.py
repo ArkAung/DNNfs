@@ -98,7 +98,6 @@ def gradientDescent(trainingimages, trainingLabels, alpha=0.):
 
     mu, sigma = 0, 0.1
     w1 = np.random.normal(mu, sigma, (h_nodes, dimensions))
-    # TODO: ask professor whether using batch_size here is the right way (probably not)
     b1 = np.ones((1, h_nodes))
     w2 = np.random.normal(mu, sigma, (classes, h_nodes))
     b2 = np.ones((1, classes))
@@ -115,15 +114,12 @@ def gradientDescent(trainingimages, trainingLabels, alpha=0.):
             x_batch = x_s[start:end]
             y_batch = y_s[start:end]
             h1, y_hat = feedforward(w1, w2, b1, b2, x_batch, y_batch)  # Do feedforward pass
-            # gradw2 = gradJ_w2(h1, y_hat, x_batch, y_batch)
             gradw2, gradb2 = grad_layer2(h1, y_hat, x_batch, y_batch)
             w2 -= (epsilon * gradw2)
             b2 -= (epsilon * np.sum(gradb2, axis=0, keepdims=True))
-            # gradw1 = gradJ_w1(h1, y_hat, w1, w2, x_batch, y_batch)
             gradw1, gradb1 = grad_layer1(h1, y_hat, w1, w2, x_batch, y_batch)
             w1 -= (epsilon * gradw1)
             b1 -= (epsilon * np.sum(gradb1, axis=0, keepdims=True))
-
             cost = J(y_hat, x_batch, y_batch, alpha)
 
         cost_history = np.append(cost_history, cost)
