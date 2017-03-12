@@ -68,7 +68,7 @@ def grad_layer1(h1, y_hat, w_1, w_2, images, labels, alpha=0.):
     return dJ_dw1, dJ_db1
 
 
-def gradientDescent(trainingimages, trainingLabels, h_nodes, epsilon, batch_size, epochs, alpha=0.):
+def gradientDescent(trainingimages, trainingLabels, h_nodes, epsilon, batch_size, epochs, alpha=0., searching=False):
     x = trainingimages
     y = trainingLabels
     dimensions = x.shape[1]
@@ -106,8 +106,13 @@ def gradientDescent(trainingimages, trainingLabels, h_nodes, epsilon, batch_size
             batch_history = np.append(batch_history, cost)
 
         cost_history = np.append(cost_history, cost)
+        batch_acc = report_accuracy(w1, w2, b1, b2, validationImages, validationLabels)
         if e % 2 == 0:
-            print "Epochs: ", e, "Cost: ", cost, "||w1|| :", np.linalg.norm(w1), "||w2|| :", np.linalg.norm(w2)
+            # print "Epochs: ", e, "Cost: ", cost, " Validation acc: ", batch_acc, "||w1|| :", np.linalg.norm(w1), "||w2|| :", np.linalg.norm(w2)
+            print("Epochs: %d Cost: %.5f Validation Acc: %.2f ||w1||: %.5f ||w2||: %.5f" % (e,cost,batch_acc,np.linalg.norm(w1), np.linalg.norm(w2)))
+
+    if (searching):
+        return cost, batch_acc
 
     plt.plot(np.linspace(1, epochs * num_batches, epochs * num_batches), batch_history, label="Training Cost")
     plt.legend()
@@ -142,11 +147,23 @@ def predict(images, labels, w1, w2, b1, b2):
     return predicted, real
 
 def findBestHyperparameters():
-    h_nodes = 40
-    l_rate = 0.0006
-    b_size = 16
-    epochs = 100
-    return h_nodes, l_rate, b_size, epochs
+    h_nodes = [20, 20, 20, 30, 30, 30, 40, 40, 40, 40]
+    l_rate = [1e-4, 1e-4, 1e-5, 0.0005, 0.00002, 0.00001, 0.00006, 0.0006, 0.00007, 0.0007]
+    b_size = [64, 32, 64, 128, 512, 256, 50, 16, 16, 16]
+    epochs = 11
+    min_cost = 100
+    max_acc = 0
+    best = 0
+    for i in range(10):
+        cost, acc = gradientDescent(trainingImages, trainingLabels, h_nodes[i], l_rate[i], b_size[i], epochs, alpha, searching=True)
+        if cost < min_cost:
+            min_cost = cost
+            best = i
+        if acc > max_acc:
+            max_acc = acc
+            best = i
+        print ("Current best parameters - Hidden Nodes: %d Learning Rate: %.6f Batch Size: %d Epochs: %d" % (h_nodes[best], l_rate[best], b_size[best], epochs))
+    return h_nodes[i], l_rate[i], b_size[i], 10
 
 if __name__ == "__main__":
     # Load data
@@ -163,6 +180,7 @@ if __name__ == "__main__":
     start = time.time()
     alpha = 0
     h_nodes, l_rate, b_size, epochs = findBestHyperparameters()
+    print ("Best parameters - Hidden Nodes: %d Learning Rate: %.6f Batch Size: %d Epochs: %d" % (h_nodes, l_rate, b_size, epochs))
     w1, w2, b1, b2 = gradientDescent(trainingImages, trainingLabels, h_nodes, l_rate, b_size, epochs, alpha)
 
     reportCosts(w1, w2, b1, b2, trainingImages, trainingLabels, validationImages, validationLabels)
