@@ -20,7 +20,7 @@ def relu_prime(z):
     return z
 
 
-def J(y_hat, images, labels, alpha=0.):
+def stochastic_J(y_hat, images, labels, alpha=0.):
     x = images
     y = labels
     m = x.shape[0]
@@ -30,8 +30,8 @@ def J(y_hat, images, labels, alpha=0.):
     return cost
 
 
-def J2(w1, w2, b1, b2, images, labels,
-       alpha=0.):  # TODO: Temp scaffold, remove this later on merge with the above function
+def J(w1, w2, b1, b2, images, labels,
+      alpha=0.):  # TODO: Temp scaffold, remove this later on merge with the above function
     x = images
     y = labels
     m = x.shape[0]
@@ -102,14 +102,15 @@ def gradientDescent(trainingimages, trainingLabels, h_nodes, epsilon, batch_size
             w1 -= (epsilon * gradw1)
             b1 -= (epsilon * np.sum(gradb1, axis=0, keepdims=True))
 
-            cost = J(y_hat, x_batch, y_batch, alpha)
+            cost = stochastic_J(y_hat, x_batch, y_batch, alpha)
             batch_history = np.append(batch_history, cost)
 
         cost_history = np.append(cost_history, cost)
         batch_acc = report_accuracy(w1, w2, b1, b2, validationImages, validationLabels)
         if e % 2 == 0:
             # print "Epochs: ", e, "Cost: ", cost, " Validation acc: ", batch_acc, "||w1|| :", np.linalg.norm(w1), "||w2|| :", np.linalg.norm(w2)
-            print("Epochs: %d Cost: %.5f Validation Acc: %.2f ||w1||: %.5f ||w2||: %.5f" % (e,cost,batch_acc,np.linalg.norm(w1), np.linalg.norm(w2)))
+            print("Epochs: %d Cost: %.5f Validation Acc: %.2f ||w1||: %.5f ||w2||: %.5f" % (
+                e,cost,batch_acc,np.linalg.norm(w1), np.linalg.norm(w2)))
 
     if (searching):
         return cost, batch_acc
@@ -129,9 +130,10 @@ def gradientDescent(trainingimages, trainingLabels, h_nodes, epsilon, batch_size
     return w1, w2, b1, b2
 
 
-def reportCosts(w1, w2, b1, b2, trainingimages, trainingLabels, testingimages, testingLabels, alpha=0.):
-    print "Training cost: {}".format(J2(w1, w2, b1, b2, trainingimages, trainingLabels, alpha))
-    print "Testing cost:  {}".format(J2(w1, w2, b1, b2, testingimages, testingLabels, alpha))
+def reportCosts(w1, w2, b1, b2, trainImg , trainLbl, valiImg, valiLbl, testImg, testLbl, alpha=0.):
+    print "Training cost: {}".format(J(w1, w2, b1, b2, trainImg, trainLbl, alpha))
+    print "Validation cost:  {}".format(J(w1, w2, b1, b2, valiImg, valiLbl, alpha))
+    print "Testing cost:  {}".format(J(w1, w2, b1, b2, testImg, testLbl, alpha))
 
 
 def report_accuracy(w1, w2, b1, b2, images, labels):
@@ -147,14 +149,16 @@ def predict(images, labels, w1, w2, b1, b2):
     return predicted, real
 
 def findBestHyperparameters():
-    h_nodes = [20, 20, 20, 30, 30, 30, 40, 40, 40, 40]
-    l_rate = [1e-4, 1e-4, 1e-5, 0.0005, 0.00002, 0.00001, 0.00006, 0.0006, 0.00007, 0.0007]
-    b_size = [64, 32, 64, 128, 512, 256, 50, 16, 16, 16]
+    h_nodes = [20, 20, 20, 30, 30, 30, 40, 40, 20, 30]
+    l_rate = [1e-4, 1e-4, 1e-5, 0.0005, 0.00002, 0.00001, 0.0006, 0.0006, 0.00007, 0.0007]
+    b_size = [64, 32, 64, 128, 512, 256, 16, 64, 36, 16]
     epochs = 11
     min_cost = 100
     max_acc = 0
     best = 0
     for i in range(10):
+        print ("Trying parameters - Hidden Nodes: %d Learning Rate: %.6f Batch Size: %d Epochs: %d" % (
+            h_nodes[i], l_rate[i], b_size[i], epochs))
         cost, acc = gradientDescent(trainingImages, trainingLabels, h_nodes[i], l_rate[i], b_size[i], epochs, alpha, searching=True)
         if cost < min_cost:
             min_cost = cost
@@ -162,8 +166,9 @@ def findBestHyperparameters():
         if acc > max_acc:
             max_acc = acc
             best = i
-        print ("Current best parameters - Hidden Nodes: %d Learning Rate: %.6f Batch Size: %d Epochs: %d" % (h_nodes[best], l_rate[best], b_size[best], epochs))
-    return h_nodes[i], l_rate[i], b_size[i], 10
+        print ("Current best parameters - Hidden Nodes: %d Learning Rate: %.6f Batch Size: %d Epochs: %d" % (
+            h_nodes[best], l_rate[best], b_size[best], epochs))
+    return h_nodes[i], l_rate[i], b_size[i], 50
 
 if __name__ == "__main__":
     # Load data
@@ -183,7 +188,9 @@ if __name__ == "__main__":
     print ("Best parameters - Hidden Nodes: %d Learning Rate: %.6f Batch Size: %d Epochs: %d" % (h_nodes, l_rate, b_size, epochs))
     w1, w2, b1, b2 = gradientDescent(trainingImages, trainingLabels, h_nodes, l_rate, b_size, epochs, alpha)
 
-    reportCosts(w1, w2, b1, b2, trainingImages, trainingLabels, validationImages, validationLabels)
-    print "Accuracy is", report_accuracy(w1, w2, b1, b2, validationImages, validationLabels), "%"
     dt = int(time.time() - start)
     print("Execution time %d sec" % dt)
+
+    reportCosts(w1, w2, b1, b2, trainingImages, trainingLabels, validationImages, validationLabels, testingImages, testingLabels)
+    print "Accuracy on Validation set: ", report_accuracy(w1, w2, b1, b2, validationImages, validationLabels), "%"
+    print "Accuracy on Testing set: ", report_accuracy(w1, w2, b1, b2, testingImages, testingLabels), "%"
