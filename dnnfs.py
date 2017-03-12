@@ -68,7 +68,7 @@ def grad_layer1(h1, y_hat, w_1, w_2, images, labels, alpha=0.):
     return dJ_dw1, dJ_db1
 
 
-def gradientDescent(trainingimages, trainingLabels, alpha=0.):
+def gradientDescent(trainingimages, trainingLabels, h_nodes, epsilon, batch_size, epochs, alpha=0.):
     x = trainingimages
     y = trainingLabels
     dimensions = x.shape[1]
@@ -76,11 +76,6 @@ def gradientDescent(trainingimages, trainingLabels, alpha=0.):
     sample_size = x.shape[0]
     cost_history = np.array([])
     batch_history = np.array([])
-    epsilon = 0.0006
-
-    batch_size = 16
-    h_nodes = 40
-    epochs = 100
 
     mu, sigma = 0, 0.1
     w1 = np.random.normal(mu, sigma, (h_nodes, dimensions))
@@ -146,6 +141,12 @@ def predict(images, labels, w1, w2, b1, b2):
     real = np.argmax(labels)
     return predicted, real
 
+def findBestHyperparameters():
+    h_nodes = 40
+    l_rate = 0.0006
+    b_size = 16
+    epochs = 100
+    return h_nodes, l_rate, b_size, epochs
 
 if __name__ == "__main__":
     # Load data
@@ -160,8 +161,9 @@ if __name__ == "__main__":
     import time
 
     start = time.time()
-    alpha = 1e2
-    w1, w2, b1, b2 = gradientDescent(trainingImages, trainingLabels, alpha)
+    alpha = 0
+    h_nodes, l_rate, b_size, epochs = findBestHyperparameters()
+    w1, w2, b1, b2 = gradientDescent(trainingImages, trainingLabels, h_nodes, l_rate, b_size, epochs, alpha)
 
     reportCosts(w1, w2, b1, b2, trainingImages, trainingLabels, validationImages, validationLabels)
     print "Accuracy is", report_accuracy(w1, w2, b1, b2, validationImages, validationLabels), "%"
