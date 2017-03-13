@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.pyplot as plt
-
+import math
 
 def softmax(z):
     z -= np.max(z, axis=1, keepdims=True)
@@ -52,9 +52,9 @@ def feedforward(w1, w2, b1, b2, images, labels, aplha=.0):
 def grad_layer2(h1, y_hat, images, labels, alpha=0.):
     x = images
     y = labels
-    h2 = (y_hat - y)
-    dJ_dw2 = h2.T.dot(h1)
-    dJ_b2 = h2
+    dJ_dz2 = (y_hat - y)
+    dJ_dw2 = dJ_dz2.T.dot(h1)
+    dJ_b2 = np.sum(dJ_dz2, axis=0, keepdims=True)
     return dJ_dw2, dJ_b2
 
 
@@ -64,27 +64,28 @@ def grad_layer1(h1, y_hat, w_1, w_2, images, labels, alpha=0.):
     dJ_dh1 = (y_hat - y).dot(w_2)
     g = dJ_dh1 * relu_prime(x.dot(w_1.T))
     dJ_dw1 = g.T.dot(x)
-    dJ_db1 = g
+    dJ_db1 = np.sum(g, axis=0, keepdims=True)
     return dJ_dw1, dJ_db1
 
 
 def gradientDescent(trainingimages, trainingLabels, h_nodes, epsilon, batch_size, epochs, alpha=0., searching=False):
     x = trainingimages
     y = trainingLabels
-    dimensions = x.shape[1]
+    sample_size, dimensions = x.shape
     classes = y.shape[1]
-    sample_size = x.shape[0]
     cost_history = np.array([])
-    batch_history = np.array([])
 
-    mu, sigma = 0, 0.1
-    w1 = np.random.normal(mu, sigma, (h_nodes, dimensions))
-    b1 = np.ones((1, h_nodes))
-    w2 = np.random.normal(mu, sigma, (classes, h_nodes))
-    b2 = np.ones((1, classes))
+    w1_range = 1./math.sqrt(dimensions)
+    w1 = np.random.uniform(-w1_range, w1_range, (h_nodes, dimensions))
+    b1 = np.ones((1, h_nodes)) * 0.1
+    w2_range = 1. / math.sqrt(h_nodes)
+    w2 = np.random.uniform(-w2_range, w2_range, (classes, h_nodes))
+    b2 = np.ones((1, classes)) * 0.1
 
     num_batches = sample_size / batch_size
     for e in xrange(epochs):
+        batch_history = np.array([])
+
         x_y = np.append(x, y, axis=1)
         np.random.shuffle(x_y)
         x_s = x_y[:, :dimensions]
@@ -95,37 +96,34 @@ def gradientDescent(trainingimages, trainingLabels, h_nodes, epsilon, batch_size
             x_batch = x_s[start:end]
             y_batch = y_s[start:end]
             h1, y_hat = feedforward(w1, w2, b1, b2, x_batch, y_batch)  # Do feedforward pass
-            gradw2, gradb2 = grad_layer2(h1, y_hat, x_batch, y_batch)
-            w2 -= (epsilon * gradw2)
-            b2 -= (epsilon * np.sum(gradb2, axis=0, keepdims=True))
+
             gradw1, gradb1 = grad_layer1(h1, y_hat, w1, w2, x_batch, y_batch)
             w1 -= (epsilon * gradw1)
-            b1 -= (epsilon * np.sum(gradb1, axis=0, keepdims=True))
+            b1 -= (epsilon * gradb1)
+
+            gradw2, gradb2 = grad_layer2(h1, y_hat, x_batch, y_batch)
+            w2 -= (epsilon * gradw2)
+            b2 -= (epsilon * gradb2)
 
             cost = stochastic_J(y_hat, x_batch, y_batch, alpha)
             batch_history = np.append(batch_history, cost)
 
-        cost_history = np.append(cost_history, cost)
-        batch_acc = report_accuracy(w1, w2, b1, b2, validationImages, validationLabels)
+        cost_history = np.append(cost_history, np.mean(batch_history))
+        validation_acc = report_accuracy(w1, w2, b1, b2, validationImages, validationLabels)
         if e % 2 == 0:
-            # print "Epochs: ", e, "Cost: ", cost, " Validation acc: ", batch_acc, "||w1|| :", np.linalg.norm(w1), "||w2|| :", np.linalg.norm(w2)
             print("Epochs: %d Cost: %.5f Validation Acc: %.2f ||w1||: %.5f ||w2||: %.5f" % (
-                e,cost,batch_acc,np.linalg.norm(w1), np.linalg.norm(w2)))
+                e, cost, validation_acc, np.linalg.norm(w1), np.linalg.norm(w2)))
 
-    if (searching):
-        return cost, batch_acc
+    if searching:
+        # When it is in searching best hyperparameters, return final cost (last element in cost_history) and
+        # final validation accuracy
+        return cost_history[-1], validation_acc
 
-    plt.plot(np.linspace(1, epochs * num_batches, epochs * num_batches), batch_history, label="Training Cost")
-    plt.legend()
-    plt.ylabel('Training Cost')
-    plt.xlabel('Epochs * batches')
-    plt.title("Cross-entropy loss values")
-    plt.show()
     plt.plot(np.linspace(1, epochs, epochs), cost_history, label="Training Cost")
-    plt.legend()
+    plt.legend('Cost')
     plt.ylabel('Training Cost')
     plt.xlabel('Epochs')
-    plt.title("Cross-entropy loss values")
+    plt.title("Cross-entropy cost values")
     plt.show()
     return w1, w2, b1, b2
 
@@ -152,7 +150,7 @@ def findBestHyperparameters():
     h_nodes = [20, 20, 20, 30, 30, 30, 40, 40, 20, 30]
     l_rate = [1e-4, 1e-4, 1e-5, 0.0005, 0.00002, 0.00001, 0.0006, 0.0006, 0.00007, 0.0007]
     b_size = [64, 32, 64, 128, 512, 256, 16, 64, 36, 16]
-    epochs = 11
+    epochs = 5
     min_cost = 100
     max_acc = 0
     best = 0
