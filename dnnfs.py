@@ -21,6 +21,7 @@ def relu_prime(z):
     return z
 
 
+# Just for the sake of saving  computing time to recalculate y_hat in each mini_batch
 def stochastic_J(w1, w2, y_hat, images, labels, alpha=0.):
     x = images
     y = labels
@@ -54,7 +55,7 @@ def feedforward(w1, w2, b1, b2, images, labels):
 def grad_layer2(h1, y_hat, w1, w2, images, labels, alpha=0.):
     y = labels
     m = y.shape[0]
-    dJ_dz2 = (y_hat - y)
+    dJ_dz2 = (1./m) * (y_hat - y)
     dJ_dw2 = dJ_dz2.T.dot(h1)
     #Regularize
     dJ_dw2 += (alpha/m) * w2
@@ -66,7 +67,8 @@ def grad_layer1(h1, y_hat, w1, w2, images, labels, alpha=0.):
     x = images
     y = labels
     m = y.shape[0]
-    dJ_dh1 = (y_hat - y).dot(w2)
+    dJ_dz2 = (1. / m) * (y_hat - y)
+    dJ_dh1 = dJ_dz2.dot(w2)
     g = dJ_dh1 * relu_prime(x.dot(w1.T))  # dJ/dz1
     dJ_dw1 = g.T.dot(x)
     # Regularize
@@ -159,10 +161,10 @@ def predict(images, labels, w1, w2, b1, b2):
     return predicted, real
 
 def findBestHyperparameters():
-    h_nodes = [20, 20, 20, 30, 30, 30, 40, 40, 20, 30]
-    l_rate = [1e-4, 1e-4, 1e-5, 0.0005, 0.00002, 0.00001, 0.0006, 0.0006, 0.00007, 0.0007]
+    h_nodes = [20, 20, 20, 50, 30, 30, 60, 40, 20, 80]
+    l_rate = [1e-4, 1e-4, 1e-5, 0.0005, 0.00002, 0.00001, 0.0006, 0.0006, 0.00007, 0.001]
     b_size = [64, 32, 64, 128, 512, 256, 16, 64, 36, 16]
-    alpha = [0.5, 0.8, 10, 1e2, 50, 0.2, 0.3, 0.7, 0.1, 0.001]
+    alpha = [0, 0.8, 10, 1e2, 50, 0.2, 0.3, 0.7, 0.1, 0.9]
     epochs = 5
     min_cost = 100
     max_acc = 0
@@ -194,10 +196,14 @@ if __name__ == "__main__":
     import time
 
     start = time.time()
-    hidden_nodes, learning_rate, batch_size, ridge_term, epochs = findBestHyperparameters()
+    # hidden_nodes, learning_rate, batch_size, ridge_term, epochs = findBestHyperparameters()
+    hidden_nodes, learning_rate, batch_size, ridge_term, epochs = 80, 0.001, 16, 0.9, 50
     print ("Best parameters - Hidden Nodes: %d Learning Rate: %.6f Batch Size: %d Alpha: %.3f Epochs: %d" %
            (hidden_nodes, learning_rate, batch_size, ridge_term, epochs))
     w_1, w_2, b_1, b_2 = gradientDescent(trainingImages, trainingLabels, hidden_nodes, learning_rate, batch_size, epochs, ridge_term)
+
+    # from scipy.optimize import check_grad
+    # print ("Check grad valude is ", check_grad(J, ))
 
     dt = int(time.time() - start)
     print("Execution time %d sec" % dt)
