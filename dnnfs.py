@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 
+
 def softmax(z):
     z -= np.max(z, axis=1, keepdims=True)
     ans = np.exp(z) / np.sum(np.exp(z), axis=1, keepdims=True)
@@ -20,49 +21,56 @@ def relu_prime(z):
     return z
 
 
-def stochastic_J(y_hat, images, labels, alpha=0.):
+def stochastic_J(w1, w2, y_hat, images, labels, alpha=0.):
     x = images
     y = labels
     m = x.shape[0]
     cost_mat = np.multiply(y, np.log(y_hat))
     cost = (-1. / m) * np.sum(np.sum(cost_mat, axis=1))
-    #     cost += (alpha / (2 * m)) * np.linalg.norm(w)
+    # Regularize
+    cost += (alpha / (2 * m)) * (np.linalg.norm(w1) + np.linalg.norm(w2))
     return cost
 
 
-def J(w1, w2, b1, b2, images, labels,
-      alpha=0.):  # TODO: Temp scaffold, remove this later on merge with the above function
+def J(w1, w2, b1, b2, images, labels, alpha=0.):
     x = images
     y = labels
     m = x.shape[0]
     h1, y_hat = feedforward(w1, w2, b1, b2, x, y)
     cost_mat = np.multiply(y, np.log(y_hat))
     cost = (-1. / m) * np.sum(np.sum(cost_mat, axis=1))
-    #     cost += (alpha / (2 * m)) * np.linalg.norm(w)
+    # Regularize
+    cost += (alpha / (2 * m)) * (np.linalg.norm(w1) + np.linalg.norm(w2))
     return cost
 
 
-def feedforward(w1, w2, b1, b2, images, labels, aplha=.0):
+def feedforward(w1, w2, b1, b2, images, labels):
     x = images
     h1 = relu(x.dot(w1.T) + b1)
     y_hat = softmax(h1.dot(w2.T) + b2)
     return h1, y_hat
 
 
-def grad_layer2(h1, y_hat, images, labels, alpha=0.):
+def grad_layer2(h1, y_hat, w1, w2, images, labels, alpha=0.):
     y = labels
+    m = y.shape[0]
     dJ_dz2 = (y_hat - y)
     dJ_dw2 = dJ_dz2.T.dot(h1)
+    #Regularize
+    dJ_dw2 += (alpha/m) * w2
     dJ_b2 = np.sum(dJ_dz2, axis=0, keepdims=True)
     return dJ_dw2, dJ_b2
 
 
-def grad_layer1(h1, y_hat, w_1, w_2, images, labels, alpha=0.):
+def grad_layer1(h1, y_hat, w1, w2, images, labels, alpha=0.):
     x = images
     y = labels
-    dJ_dh1 = (y_hat - y).dot(w_2)
-    g = dJ_dh1 * relu_prime(x.dot(w_1.T)) # dJ/dw2 and dJ/db2
+    m = y.shape[0]
+    dJ_dh1 = (y_hat - y).dot(w2)
+    g = dJ_dh1 * relu_prime(x.dot(w1.T))  # dJ/dz1
     dJ_dw1 = g.T.dot(x)
+    # Regularize
+    dJ_dw1 += (alpha / m) * w1
     dJ_db1 = np.sum(g, axis=0, keepdims=True)
     return dJ_dw1, dJ_db1
 
@@ -97,25 +105,26 @@ def gradientDescent(trainingimages, trainingLabels, h_nodes, epsilon, batch_size
             # Do feedforward pass
             h1, y_hat = feedforward(w1, w2, b1, b2, x_batch, y_batch)
             # Find dJ/dw1 and dJ/d1
-            gradw1, gradb1 = grad_layer1(h1, y_hat, w1, w2, x_batch, y_batch)
+            gradw1, gradb1 = grad_layer1(h1, y_hat, w1, w2, x_batch, y_batch, alpha)
+            # Find dJ/dw2 and dJ/dwb2
+            gradw2, gradb2 = grad_layer2(h1, y_hat, w1, w2, x_batch, y_batch, alpha)
             w1 -= (epsilon * gradw1)
             b1 -= (epsilon * gradb1)
-            # Find dJ/dw2 and dJ/dwb2
-            gradw2, gradb2 = grad_layer2(h1, y_hat, x_batch, y_batch)
             w2 -= (epsilon * gradw2)
             b2 -= (epsilon * gradb2)
             # Cost of current mini-batch
-            cost = stochastic_J(y_hat, x_batch, y_batch, alpha)
+            cost = stochastic_J(w1, w2, y_hat, x_batch, y_batch, alpha)
             # List of costs for all the mini-batches in current epoch
             batch_history = np.append(batch_history, cost)
 
+        epoch_cost = np.mean(batch_history)
         # List of costs for epochs
-        cost_history = np.append(cost_history, np.mean(batch_history))
+        cost_history = np.append(cost_history, epoch_cost)
         # Accuracy of on validation data set after each epoch
         validation_acc = report_accuracy(w1, w2, b1, b2, validationImages, validationLabels)
         if e % 2 == 0:
             print("Epochs: %d Cost: %.5f Validation Acc: %.2f ||w1||: %.5f ||w2||: %.5f" % (
-                e, cost, validation_acc, np.linalg.norm(w1), np.linalg.norm(w2)))
+                e, epoch_cost, validation_acc, np.linalg.norm(w1), np.linalg.norm(w2)))
 
     if searching:
         # When searching best hyperparameters, return final cost (last element in cost_history) and
@@ -153,27 +162,28 @@ def findBestHyperparameters():
     h_nodes = [20, 20, 20, 30, 30, 30, 40, 40, 20, 30]
     l_rate = [1e-4, 1e-4, 1e-5, 0.0005, 0.00002, 0.00001, 0.0006, 0.0006, 0.00007, 0.0007]
     b_size = [64, 32, 64, 128, 512, 256, 16, 64, 36, 16]
+    alpha = [0.5, 0.8, 10, 1e2, 50, 0.2, 0.3, 0.7, 0.1, 0.001]
     epochs = 5
     min_cost = 100
     max_acc = 0
     best = 0
     for i in range(10):
-        print ("Trying parameters - Hidden Nodes: %d Learning Rate: %.6f Batch Size: %d Epochs: %d" % (
-            h_nodes[i], l_rate[i], b_size[i], epochs))
-        cost, acc = gradientDescent(trainingImages, trainingLabels, h_nodes[i], l_rate[i], b_size[i], epochs, alpha, searching=True)
+        print ("Trying parameters - Hidden Nodes: %d Learning Rate: %.6f Batch Size: %d Alpha: %.3f Epochs: %d" % (
+            h_nodes[i], l_rate[i], b_size[i], alpha[i], epochs))
+        cost, acc = gradientDescent(trainingImages, trainingLabels, h_nodes[i], l_rate[i], b_size[i], epochs, alpha[i], searching=True)
         if cost < min_cost:
             min_cost = cost
             best = i
         if acc > max_acc:
             max_acc = acc
             best = i
-        print ("Current best parameters - Hidden Nodes: %d Learning Rate: %.6f Batch Size: %d Epochs: %d" % (
-            h_nodes[best], l_rate[best], b_size[best], epochs))
-    return h_nodes[i], l_rate[i], b_size[i], 50
+        print ("Current best parameters - Hidden Nodes: %d Learning Rate: %.6f Batch Size: %d Alpha: %.3f Epochs: %d" % (
+            h_nodes[best], l_rate[best], b_size[best], alpha[best], epochs))
+    return h_nodes[i], l_rate[i], b_size[i], alpha[i], 50
 
 if __name__ == "__main__":
     # Load data
-    if ('trainingImages' not in globals()):
+    if 'trainingImages' not in globals():
         trainingImages = np.load("datasets/mnist_train_images.npy")
         trainingLabels = np.load("datasets/mnist_train_labels.npy")
         validationImages = np.load("datasets/mnist_validation_images.npy")
@@ -184,14 +194,14 @@ if __name__ == "__main__":
     import time
 
     start = time.time()
-    alpha = 0
-    h_nodes, l_rate, b_size, epochs = findBestHyperparameters()
-    print ("Best parameters - Hidden Nodes: %d Learning Rate: %.6f Batch Size: %d Epochs: %d" % (h_nodes, l_rate, b_size, epochs))
-    w1, w2, b1, b2 = gradientDescent(trainingImages, trainingLabels, h_nodes, l_rate, b_size, epochs, alpha)
+    hidden_nodes, learning_rate, batch_size, ridge_term, epochs = findBestHyperparameters()
+    print ("Best parameters - Hidden Nodes: %d Learning Rate: %.6f Batch Size: %d Alpha: %.3f Epochs: %d" %
+           (hidden_nodes, learning_rate, batch_size, ridge_term, epochs))
+    w_1, w_2, b_1, b_2 = gradientDescent(trainingImages, trainingLabels, hidden_nodes, learning_rate, batch_size, epochs, ridge_term)
 
     dt = int(time.time() - start)
     print("Execution time %d sec" % dt)
 
-    reportCosts(w1, w2, b1, b2, trainingImages, trainingLabels, validationImages, validationLabels, testingImages, testingLabels)
-    print "Accuracy on Validation set: ", report_accuracy(w1, w2, b1, b2, validationImages, validationLabels), "%"
-    print "Accuracy on Testing set: ", report_accuracy(w1, w2, b1, b2, testingImages, testingLabels), "%"
+    reportCosts(w_1, w_2, b_1, b_2, trainingImages, trainingLabels, validationImages, validationLabels, testingImages, testingLabels)
+    print "Accuracy on Validation set: ", report_accuracy(w_1, w_2, b_1, b_2, validationImages, validationLabels), "%"
+    print "Accuracy on Testing set: ", report_accuracy(w_1, w_2, b_1, b_2, testingImages, testingLabels), "%"
