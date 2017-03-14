@@ -29,7 +29,7 @@ def stochastic_J(w1, w2, y_hat, images, labels, alpha=0.):
     cost_mat = np.multiply(y, np.log(y_hat))
     cost = (-1. / m) * np.sum(np.sum(cost_mat, axis=1))
     # Regularize
-    cost += (alpha / (2 * m)) * (np.linalg.norm(w1) + np.linalg.norm(w2))
+    cost += (alpha/2) * (np.linalg.norm(w1) + np.linalg.norm(w2))
     return cost
 
 
@@ -41,7 +41,7 @@ def J(w1, w2, b1, b2, images, labels, alpha=0.):
     cost_mat = np.multiply(y, np.log(y_hat))
     cost = (-1. / m) * np.sum(np.sum(cost_mat, axis=1))
     # Regularize
-    cost += (alpha / (2 * m)) * (np.linalg.norm(w1) + np.linalg.norm(w2))
+    cost += (alpha/2) * (np.linalg.norm(w1) + np.linalg.norm(w2))
     return cost
 
 
@@ -55,10 +55,10 @@ def feedforward(w1, w2, b1, b2, images, labels):
 def grad_layer2(h1, y_hat, w1, w2, images, labels, alpha=0.):
     y = labels
     m = y.shape[0]
-    dJ_dz2 = (1./m) * (y_hat - y)
+    dJ_dz2 = (y_hat - y)
     dJ_dw2 = dJ_dz2.T.dot(h1)
     #Regularize
-    dJ_dw2 += (alpha/m) * w2
+    dJ_dw2 += alpha * w2
     dJ_b2 = np.sum(dJ_dz2, axis=0, keepdims=True)
     return dJ_dw2, dJ_b2
 
@@ -67,12 +67,12 @@ def grad_layer1(h1, y_hat, w1, w2, images, labels, alpha=0.):
     x = images
     y = labels
     m = y.shape[0]
-    dJ_dz2 = (1. / m) * (y_hat - y)
+    dJ_dz2 = (y_hat - y)
     dJ_dh1 = dJ_dz2.dot(w2)
     g = dJ_dh1 * relu_prime(x.dot(w1.T))  # dJ/dz1
     dJ_dw1 = g.T.dot(x)
     # Regularize
-    dJ_dw1 += (alpha / m) * w1
+    dJ_dw1 += alpha * w1
     dJ_db1 = np.sum(g, axis=0, keepdims=True)
     return dJ_dw1, dJ_db1
 
@@ -197,7 +197,7 @@ if __name__ == "__main__":
 
     start = time.time()
     # hidden_nodes, learning_rate, batch_size, ridge_term, epochs = findBestHyperparameters()
-    hidden_nodes, learning_rate, batch_size, ridge_term, epochs = 80, 0.001, 16, 0.9, 50
+    hidden_nodes, learning_rate, batch_size, ridge_term, epochs = 50, 0.001, 16, 0.02, 20
     print ("Best parameters - Hidden Nodes: %d Learning Rate: %.6f Batch Size: %d Alpha: %.3f Epochs: %d" %
            (hidden_nodes, learning_rate, batch_size, ridge_term, epochs))
     w_1, w_2, b_1, b_2 = gradientDescent(trainingImages, trainingLabels, hidden_nodes, learning_rate, batch_size, epochs, ridge_term)

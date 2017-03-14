@@ -1,5 +1,8 @@
-batch size, hidden nodes, epochs, accuracy, train cost, validation cost, test cost
+learning_rate, batch size, hidden nodes, epochs, accuracy, train cost, validation cost, test cost
 1000, 30, 200, 92.39, 0.272725523696, 0.258780010806, 0.261622675117
 16, 30, 50, 96.269999999999996, 0.0950634275588, 0.135253654427, 0.129984909422
 16, 40, 100, 96.810000000000002, 0.0410987501927, 0.119755179361, 0.121827934223
 16, 100, 50, 96.22, 0.154217503946, 0.152801589909, 0.153046061877
+
+hidden_nodes, learning_rate, batch_size, ridge_term, epoch, training_cost, validation_cost, test_cost, validation_accuracy, test_accuracy
+50, 0.001, 16, 0.02, 20, 0.100904720799, 0.10970276764, 0.109362043607, 97.28, 97.07
