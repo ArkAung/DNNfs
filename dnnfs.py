@@ -50,7 +50,6 @@ def feedforward(w1, w2, b1, b2, images, labels, aplha=.0):
 
 
 def grad_layer2(h1, y_hat, images, labels, alpha=0.):
-    x = images
     y = labels
     dJ_dz2 = (y_hat - y)
     dJ_dw2 = dJ_dz2.T.dot(h1)
@@ -62,7 +61,7 @@ def grad_layer1(h1, y_hat, w_1, w_2, images, labels, alpha=0.):
     x = images
     y = labels
     dJ_dh1 = (y_hat - y).dot(w_2)
-    g = dJ_dh1 * relu_prime(x.dot(w_1.T))
+    g = dJ_dh1 * relu_prime(x.dot(w_1.T)) # dJ/dw2 and dJ/db2
     dJ_dw1 = g.T.dot(x)
     dJ_db1 = np.sum(g, axis=0, keepdims=True)
     return dJ_dw1, dJ_db1
@@ -95,28 +94,32 @@ def gradientDescent(trainingimages, trainingLabels, h_nodes, epsilon, batch_size
             end = start + batch_size
             x_batch = x_s[start:end]
             y_batch = y_s[start:end]
-            h1, y_hat = feedforward(w1, w2, b1, b2, x_batch, y_batch)  # Do feedforward pass
-
+            # Do feedforward pass
+            h1, y_hat = feedforward(w1, w2, b1, b2, x_batch, y_batch)
+            # Find dJ/dw1 and dJ/d1
             gradw1, gradb1 = grad_layer1(h1, y_hat, w1, w2, x_batch, y_batch)
             w1 -= (epsilon * gradw1)
             b1 -= (epsilon * gradb1)
-
+            # Find dJ/dw2 and dJ/dwb2
             gradw2, gradb2 = grad_layer2(h1, y_hat, x_batch, y_batch)
             w2 -= (epsilon * gradw2)
             b2 -= (epsilon * gradb2)
-
+            # Cost of current mini-batch
             cost = stochastic_J(y_hat, x_batch, y_batch, alpha)
+            # List of costs for all the mini-batches in current epoch
             batch_history = np.append(batch_history, cost)
 
+        # List of costs for epochs
         cost_history = np.append(cost_history, np.mean(batch_history))
+        # Accuracy of on validation data set after each epoch
         validation_acc = report_accuracy(w1, w2, b1, b2, validationImages, validationLabels)
         if e % 2 == 0:
             print("Epochs: %d Cost: %.5f Validation Acc: %.2f ||w1||: %.5f ||w2||: %.5f" % (
                 e, cost, validation_acc, np.linalg.norm(w1), np.linalg.norm(w2)))
 
     if searching:
-        # When it is in searching best hyperparameters, return final cost (last element in cost_history) and
-        # final validation accuracy
+        # When searching best hyperparameters, return final cost (last element in cost_history) and
+        # final validation accuracy. These will be heuristics when choosing the best hyperparameters
         return cost_history[-1], validation_acc
 
     plt.plot(np.linspace(1, epochs, epochs), cost_history, label="Training Cost")
