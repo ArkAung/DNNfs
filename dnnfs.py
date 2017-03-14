@@ -77,9 +77,9 @@ def grad_layer1(h1, y_hat, w1, w2, images, labels, alpha=0.):
     return dJ_dw1, dJ_db1
 
 
-def gradientDescent(trainingimages, trainingLabels, h_nodes, epsilon, batch_size, epochs, alpha=0., searching=False):
-    x = trainingimages
-    y = trainingLabels
+def sgd(train_images, train_labels, val_images, val_labels, h_nodes, epsilon, batch_size, epochs, alpha=0., searching=False):
+    x = train_images
+    y = train_labels
     sample_size, dimensions = x.shape
     classes = y.shape[1]
     cost_history = np.array([])
@@ -123,7 +123,7 @@ def gradientDescent(trainingimages, trainingLabels, h_nodes, epsilon, batch_size
         # List of costs for epochs
         cost_history = np.append(cost_history, epoch_cost)
         # Accuracy of on validation data set after each epoch
-        validation_acc = report_accuracy(w1, w2, b1, b2, validationImages, validationLabels)
+        validation_acc = report_accuracy(w1, w2, b1, b2, val_images, val_labels)
         if e % 2 == 0:
             print("Epochs: %d Cost: %.5f Validation Acc: %.2f ||w1||: %.5f ||w2||: %.5f" % (
                 e, epoch_cost, validation_acc, np.linalg.norm(w1), np.linalg.norm(w2)))
@@ -160,11 +160,12 @@ def predict(images, labels, w1, w2, b1, b2):
     real = np.argmax(labels)
     return predicted, real
 
-def findBestHyperparameters():
-    h_nodes = [20, 20, 20, 50, 30, 30, 60, 40, 20, 80]
-    l_rate = [1e-4, 1e-4, 1e-5, 0.0005, 0.00002, 0.00001, 0.0006, 0.0006, 0.00007, 0.001]
-    b_size = [64, 32, 64, 128, 512, 256, 16, 64, 36, 16]
-    alpha = [0, 0.8, 10, 1e2, 50, 0.2, 0.3, 0.7, 0.1, 0.9]
+
+def findBestHyperparameters(train_images, train_labels, val_images, val_labels):
+    h_nodes = [20, 20, 50, 50, 30, 30, 60, 40, 20, 80]
+    l_rate = [1e-4, 1e-4, 0.001, 0.0005, 0.00002, 0.00001, 0.0006, 0.0006, 0.00007, 0.001]
+    b_size = [64, 32, 16, 128, 512, 256, 16, 64, 36, 16]
+    alpha = [0, 0.8, 0.02, 1e2, 50, 0.2, 0.3, 0.7, 0.1, 0.9]
     epochs = 5
     min_cost = 100
     max_acc = 0
@@ -172,16 +173,17 @@ def findBestHyperparameters():
     for i in range(10):
         print ("Trying parameters - Hidden Nodes: %d Learning Rate: %.6f Batch Size: %d Alpha: %.3f Epochs: %d" % (
             h_nodes[i], l_rate[i], b_size[i], alpha[i], epochs))
-        cost, acc = gradientDescent(trainingImages, trainingLabels, h_nodes[i], l_rate[i], b_size[i], epochs, alpha[i], searching=True)
+        cost, acc = sgd(train_images, train_labels, val_images, val_labels,
+                        h_nodes[i], l_rate[i], b_size[i], epochs, alpha[i], searching=True)
         if cost < min_cost:
             min_cost = cost
             best = i
         if acc > max_acc:
             max_acc = acc
             best = i
-        print ("Current best parameters - Hidden Nodes: %d Learning Rate: %.6f Batch Size: %d Alpha: %.3f Epochs: %d" % (
-            h_nodes[best], l_rate[best], b_size[best], alpha[best], epochs))
-    return h_nodes[i], l_rate[i], b_size[i], alpha[i], 50
+        print ("Current best parameters - Hidden Nodes: %d Learning Rate: %.6f Batch Size: %d Alpha: %.3f Epochs: %d" %
+               (h_nodes[best], l_rate[best], b_size[best], alpha[best], epochs))
+    return h_nodes[i], l_rate[i], b_size[i], alpha[i], 20
 
 if __name__ == "__main__":
     # Load data
@@ -196,11 +198,12 @@ if __name__ == "__main__":
     import time
 
     start = time.time()
-    # hidden_nodes, learning_rate, batch_size, ridge_term, epochs = findBestHyperparameters()
-    hidden_nodes, learning_rate, batch_size, ridge_term, epochs = 50, 0.001, 16, 0.02, 20
+    hidden_nodes, learning_rate, batch_size, ridge_term, epochs = findBestHyperparameters(trainingImages, trainingLabels,
+                                                                                          validationImages, validationLabels)
     print ("Best parameters - Hidden Nodes: %d Learning Rate: %.6f Batch Size: %d Alpha: %.3f Epochs: %d" %
            (hidden_nodes, learning_rate, batch_size, ridge_term, epochs))
-    w_1, w_2, b_1, b_2 = gradientDescent(trainingImages, trainingLabels, hidden_nodes, learning_rate, batch_size, epochs, ridge_term)
+    w_1, w_2, b_1, b_2 = sgd(trainingImages, trainingLabels, validationImages, validationLabels,
+                             hidden_nodes, learning_rate, batch_size, epochs, ridge_term)
 
     # from scipy.optimize import check_grad
     # print ("Check grad valude is ", check_grad(J, ))
