@@ -29,7 +29,7 @@ def stochastic_J(w1, w2, y_hat, images, labels, alpha=0.):
     cost_mat = np.multiply(y, np.log(y_hat))
     cost = (-1. / m) * np.sum(np.sum(cost_mat, axis=1))
     # Regularize
-    cost += (alpha/2) * (np.linalg.norm(w1) + np.linalg.norm(w2))
+    cost += (alpha/(2 * m)) * (np.linalg.norm(w1) + np.linalg.norm(w2))
     return cost
 
 
@@ -41,7 +41,7 @@ def J(w1, w2, b1, b2, images, labels, alpha=0.):
     cost_mat = np.multiply(y, np.log(y_hat))
     cost = (-1. / m) * np.sum(np.sum(cost_mat, axis=1))
     # Regularize
-    cost += (alpha/2) * (np.linalg.norm(w1) + np.linalg.norm(w2))
+    cost += (alpha/(2 * m)) * (np.linalg.norm(w1) + np.linalg.norm(w2))
     return cost
 
 
@@ -58,7 +58,7 @@ def grad_layer2(h1, y_hat, w1, w2, images, labels, alpha=0.):
     dJ_dz2 = (y_hat - y)
     dJ_dw2 = dJ_dz2.T.dot(h1)
     #Regularize
-    dJ_dw2 += alpha * w2
+    dJ_dw2 += (alpha/m) * w2
     dJ_b2 = np.sum(dJ_dz2, axis=0, keepdims=True)
     return dJ_dw2, dJ_b2
 
@@ -72,7 +72,7 @@ def grad_layer1(h1, y_hat, w1, w2, images, labels, alpha=0.):
     g = dJ_dh1 * relu_prime(x.dot(w1.T))  # dJ/dz1
     dJ_dw1 = g.T.dot(x)
     # Regularize
-    dJ_dw1 += alpha * w1
+    dJ_dw1 += (alpha/m) * w1
     dJ_db1 = np.sum(g, axis=0, keepdims=True)
     return dJ_dw1, dJ_db1
 
@@ -162,17 +162,17 @@ def predict(images, labels, w1, w2, b1, b2):
 
 
 def findBestHyperparameters(train_images, train_labels, val_images, val_labels):
-    h_nodes = [20, 20, 50, 50, 30, 30, 60, 40, 20, 80]
-    l_rate = [1e-4, 1e-4, 0.001, 0.0005, 0.00002, 0.00001, 0.0006, 0.0006, 0.00007, 0.001]
-    b_size = [64, 32, 16, 128, 512, 256, 16, 64, 36, 16]
-    alpha = [0, 0.8, 0.02, 1e2, 50, 0.2, 0.3, 0.7, 0.1, 0.9]
+    h_nodes = [20, 20, 50, 50, 80, 30, 60, 40, 20, 80]
+    l_rate = [1e-4, 1e-4, 0.001, 0.0005, 0.001, 0.00001, 0.0006, 0.0006, 0.00007, 0.001]
+    b_size = [64, 32, 50, 128, 500, 100, 16, 64, 36, 16]
+    alpha = [0, 0.8, 0.02, 1e2, 5.0, 0.2, 0.3, 0.7, 0.1, 0.9]
     epochs = 5
     min_cost = 100
     max_acc = 0
     best = 0
     for i in range(10):
-        print ("Trying parameters - Hidden Nodes: %d Learning Rate: %.6f Batch Size: %d Alpha: %.3f Epochs: %d" % (
-            h_nodes[i], l_rate[i], b_size[i], alpha[i], epochs))
+        print ("[%d] Trying parameters - Hidden Nodes: %d Learning Rate: %.6f Batch Size: %d Alpha: %.3f Epochs: %d" % (
+            i, h_nodes[i], l_rate[i], b_size[i], alpha[i], epochs))
         cost, acc = sgd(train_images, train_labels, val_images, val_labels,
                         h_nodes[i], l_rate[i], b_size[i], epochs, alpha[i], searching=True)
         if cost < min_cost:
@@ -183,7 +183,9 @@ def findBestHyperparameters(train_images, train_labels, val_images, val_labels):
             best = i
         print ("Current best parameters - Hidden Nodes: %d Learning Rate: %.6f Batch Size: %d Alpha: %.3f Epochs: %d" %
                (h_nodes[best], l_rate[best], b_size[best], alpha[best], epochs))
-    return h_nodes[i], l_rate[i], b_size[i], alpha[i], 20
+
+    return h_nodes[best], l_rate[best], b_size[best], alpha[best], 20
+
 
 if __name__ == "__main__":
     # Load data
@@ -200,6 +202,7 @@ if __name__ == "__main__":
     start = time.time()
     hidden_nodes, learning_rate, batch_size, ridge_term, epochs = findBestHyperparameters(trainingImages, trainingLabels,
                                                                                           validationImages, validationLabels)
+    hidden_nodes, learning_rate, batch_size, ridge_term, epochs = 80, 0.001, 500, 5.0, 20
     print ("Best parameters - Hidden Nodes: %d Learning Rate: %.6f Batch Size: %d Alpha: %.3f Epochs: %d" %
            (hidden_nodes, learning_rate, batch_size, ridge_term, epochs))
     w_1, w_2, b_1, b_2 = sgd(trainingImages, trainingLabels, validationImages, validationLabels,
