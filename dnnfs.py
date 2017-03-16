@@ -46,31 +46,31 @@ def J(w1, w2, b1, b2, images, labels, alpha=0.):
 
 
 def checkgrad_cost(w, images, labels, alpha=.0):
-    w1_idx = images.shape[1] * 80
-    b1_idx = 80
-    w2_idx = labels.shape[1] * 80
+    w1_idx = images.shape[1] * hidden_nodes
+    b1_idx = hidden_nodes
+    w2_idx = labels.shape[1] * hidden_nodes
     b2_idx = 10
-    w1 = np.reshape(w[:w1_idx], (80, images.shape[1]))
-    b1 = np.reshape(w[w1_idx:b1_idx], (1, 80))
-    w2 = np.reshape(w[b1_idx:w2_idx], (labels.shape[1], 80))
-    b2 = np.reshape(w[w2_idx:], (1, 10))
+    w1 = np.reshape(w[:w1_idx], (hidden_nodes, images.shape[1]))
+    b1 = np.reshape(w[w1_idx:w1_idx + b1_idx], (1, hidden_nodes))
+    w2 = np.reshape(w[w1_idx + b1_idx:w1_idx + b1_idx + w2_idx], (labels.shape[1], hidden_nodes))
+    b2 = np.reshape(w[w1_idx + b1_idx + w2_idx:], (1, 10))
     cost = J(w1, w2, b1, b2, images, labels, alpha)
     return cost
 
 
 def checkgrad_grad(w, images, labels, alpha=.0):
-    w1_idx = images.shape[1] * 80
-    b1_idx = 80
-    w2_idx = labels.shape[1] * 80
+    w1_idx = images.shape[1] * hidden_nodes
+    b1_idx = hidden_nodes
+    w2_idx = labels.shape[1] * hidden_nodes
     b2_idx = 10
-    w1 = np.reshape(w[:w1_idx], (80, images.shape[1]))
-    b1 = np.reshape(w[w1_idx:b1_idx], (1, 80))
-    w2 = np.reshape(w[b1_idx:w2_idx], (labels.shape[1], 80))
-    b2 = np.reshape(w[w2_idx:], (1, 10))
-    h1, y_hat = feedforward(w1, w2, b1, b2, images, labels, alpha)
-    gw2 = grad_layer2(h1, y_hat, w1, w2, images, labels, alpha)
-    gw1 = grad_layer1(h1, y_hat, w1, w2, images, labels, alpha)
-    final_w = np.concatenate((gw1.flatten()), gw2.flatten())
+    w1 = np.reshape(w[:w1_idx], (hidden_nodes, images.shape[1]))
+    b1 = np.reshape(w[w1_idx:w1_idx+b1_idx], (1, hidden_nodes))
+    w2 = np.reshape(w[w1_idx+b1_idx:w1_idx+b1_idx+w2_idx], (labels.shape[1], hidden_nodes))
+    b2 = np.reshape(w[w1_idx+b1_idx+w2_idx:], (1, 10))
+    h1, y_hat = feedforward(w1, w2, b1, b2, images, labels)
+    gw2, gb2 = grad_layer2(h1, y_hat, w1, w2, images, labels, alpha)
+    gw1, gb1 = grad_layer1(h1, y_hat, w1, w2, images, labels, alpha)
+    final_w = np.concatenate((gw1.flatten(), gb1.flatten(), gw2.flatten(), gb2.flatten()))
     return final_w
 
 
@@ -163,12 +163,12 @@ def sgd(train_images, train_labels, val_images, val_labels, h_nodes, epsilon, ba
         # final validation accuracy. These will be heuristics when choosing the best hyperparameters
         return cost_history[-1], validation_acc
 
-    plt.plot(np.linspace(1, epochs, epochs), cost_history, label="Training Cost")
-    plt.legend('Cost')
-    plt.ylabel('Training Cost')
-    plt.xlabel('Epochs')
-    plt.title("Cross-entropy cost values")
-    plt.show()
+    # plt.plot(np.linspace(1, epochs, epochs), cost_history, label="Training Cost")
+    # plt.legend('Cost')
+    # plt.ylabel('Training Cost')
+    # plt.xlabel('Epochs')
+    # plt.title("Cross-entropy cost values")
+    # plt.show()
     return w1, w2, b1, b2
 
 
@@ -232,7 +232,7 @@ if __name__ == "__main__":
     start = time.time()
     # hidden_nodes, learning_rate, batch_size, ridge_term, epochs = findBestHyperparameters(trainingImages, trainingLabels,
     #                                                                                       validationImages, validationLabels)
-    hidden_nodes, learning_rate, batch_size, ridge_term, epochs = 80, 0.001, 500, 5.0, 20
+    hidden_nodes, learning_rate, batch_size, ridge_term, epochs = 48, 0.005, 64, 5.0, 2
     print ("Best parameters - Hidden Nodes: %d Learning Rate: %.6f Batch Size: %d Alpha: %.3f Epochs: %d" %
            (hidden_nodes, learning_rate, batch_size, ridge_term, epochs))
     w_1, w_2, b_1, b_2 = sgd(trainingImages, trainingLabels, validationImages, validationLabels,
