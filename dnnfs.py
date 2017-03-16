@@ -45,6 +45,36 @@ def J(w1, w2, b1, b2, images, labels, alpha=0.):
     return cost
 
 
+def checkgrad_cost(w, images, labels, alpha=.0):
+    w1_idx = images.shape[1] * 80
+    b1_idx = 80
+    w2_idx = labels.shape[1] * 80
+    b2_idx = 10
+    w1 = np.reshape(w[:w1_idx], (80, images.shape[1]))
+    b1 = np.reshape(w[w1_idx:b1_idx], (1, 80))
+    w2 = np.reshape(w[b1_idx:w2_idx], (labels.shape[1], 80))
+    b2 = np.reshape(w[w2_idx:], (1, 10))
+    cost = J(w1, w2, b1, b2, images, labels, alpha)
+    return cost
+
+
+def checkgrad_grad(w, images, labels, alpha=.0):
+    w1_idx = images.shape[1] * 80
+    b1_idx = 80
+    w2_idx = labels.shape[1] * 80
+    b2_idx = 10
+    w1 = np.reshape(w[:w1_idx], (80, images.shape[1]))
+    b1 = np.reshape(w[w1_idx:b1_idx], (1, 80))
+    w2 = np.reshape(w[b1_idx:w2_idx], (labels.shape[1], 80))
+    b2 = np.reshape(w[w2_idx:], (1, 10))
+    h1, y_hat = feedforward(w1, w2, b1, b2, images, labels, alpha)
+    gw2 = grad_layer2(h1, y_hat, w1, w2, images, labels, alpha)
+    gw1 = grad_layer1(h1, y_hat, w1, w2, images, labels, alpha)
+    final_w = np.concatenate((gw1.flatten()), gw2.flatten())
+    return final_w
+
+
+
 def feedforward(w1, w2, b1, b2, images, labels):
     x = images
     h1 = relu(x.dot(w1.T) + b1)
@@ -55,7 +85,7 @@ def feedforward(w1, w2, b1, b2, images, labels):
 def grad_layer2(h1, y_hat, w1, w2, images, labels, alpha=0.):
     y = labels
     m = y.shape[0]
-    dJ_dz2 = (y_hat - y)
+    dJ_dz2 = y_hat - y
     dJ_dw2 = dJ_dz2.T.dot(h1)
     #Regularize
     dJ_dw2 += (alpha/m) * w2
@@ -67,7 +97,7 @@ def grad_layer1(h1, y_hat, w1, w2, images, labels, alpha=0.):
     x = images
     y = labels
     m = y.shape[0]
-    dJ_dz2 = (y_hat - y)
+    dJ_dz2 = y_hat - y
     dJ_dh1 = dJ_dz2.dot(w2)
     g = dJ_dh1 * relu_prime(x.dot(w1.T))  # dJ/dz1
     dJ_dw1 = g.T.dot(x)
@@ -84,10 +114,10 @@ def sgd(train_images, train_labels, val_images, val_labels, h_nodes, epsilon, ba
     classes = y.shape[1]
     cost_history = np.array([])
 
-    w1_range = 1./math.sqrt(dimensions)
+    w1_range = math.sqrt(2./dimensions)
     w1 = np.random.uniform(-w1_range, w1_range, (h_nodes, dimensions))
     b1 = np.ones((1, h_nodes)) * 0.1
-    w2_range = 1. / math.sqrt(h_nodes)
+    w2_range = math.sqrt(2. / h_nodes)
     w2 = np.random.uniform(-w2_range, w2_range, (classes, h_nodes))
     b2 = np.ones((1, classes)) * 0.1
 
@@ -164,7 +194,7 @@ def predict(images, labels, w1, w2, b1, b2):
 def findBestHyperparameters(train_images, train_labels, val_images, val_labels):
     h_nodes = [20, 20, 50, 50, 80, 30, 60, 40, 20, 80]
     l_rate = [1e-4, 1e-4, 0.001, 0.0005, 0.001, 0.00001, 0.0006, 0.0006, 0.00007, 0.001]
-    b_size = [64, 32, 50, 128, 500, 100, 16, 64, 36, 16]
+    b_size = [1000, 10000, 50, 125, 500, 275, 88, 40, 625, 25]
     alpha = [0, 0.8, 0.02, 1e2, 5.0, 0.2, 0.3, 0.7, 0.1, 0.9]
     epochs = 5
     min_cost = 100
@@ -200,16 +230,18 @@ if __name__ == "__main__":
     import time
 
     start = time.time()
-    hidden_nodes, learning_rate, batch_size, ridge_term, epochs = findBestHyperparameters(trainingImages, trainingLabels,
-                                                                                          validationImages, validationLabels)
+    # hidden_nodes, learning_rate, batch_size, ridge_term, epochs = findBestHyperparameters(trainingImages, trainingLabels,
+    #                                                                                       validationImages, validationLabels)
     hidden_nodes, learning_rate, batch_size, ridge_term, epochs = 80, 0.001, 500, 5.0, 20
     print ("Best parameters - Hidden Nodes: %d Learning Rate: %.6f Batch Size: %d Alpha: %.3f Epochs: %d" %
            (hidden_nodes, learning_rate, batch_size, ridge_term, epochs))
     w_1, w_2, b_1, b_2 = sgd(trainingImages, trainingLabels, validationImages, validationLabels,
                              hidden_nodes, learning_rate, batch_size, epochs, ridge_term)
 
-    # from scipy.optimize import check_grad
-    # print ("Check grad valude is ", check_grad(J, ))
+    from scipy.optimize import check_grad
+    checkgrad_w = np.concatenate((w_1.flatten(), b_1.flatten(), w_2.flatten(), b_2.flatten()))
+    print ("Check grad value is ", check_grad(checkgrad_cost, checkgrad_grad, checkgrad_w,
+                                              trainingImages, trainingLabels, 5.0))
 
     dt = int(time.time() - start)
     print("Execution time %d sec" % dt)
