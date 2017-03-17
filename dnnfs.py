@@ -45,36 +45,6 @@ def J(w1, w2, b1, b2, images, labels, alpha=0.):
     return cost
 
 
-def checkgrad_cost(w, images, labels, alpha=.0):
-    w1_idx = images.shape[1] * hidden_nodes
-    b1_idx = hidden_nodes
-    w2_idx = labels.shape[1] * hidden_nodes
-    b2_idx = 10
-    w1 = np.reshape(w[:w1_idx], (hidden_nodes, images.shape[1]))
-    b1 = np.reshape(w[w1_idx:w1_idx + b1_idx], (1, hidden_nodes))
-    w2 = np.reshape(w[w1_idx + b1_idx:w1_idx + b1_idx + w2_idx], (labels.shape[1], hidden_nodes))
-    b2 = np.reshape(w[w1_idx + b1_idx + w2_idx:], (1, 10))
-    cost = J(w1, w2, b1, b2, images, labels, alpha)
-    return cost
-
-
-def checkgrad_grad(w, images, labels, alpha=.0):
-    w1_idx = images.shape[1] * hidden_nodes
-    b1_idx = hidden_nodes
-    w2_idx = labels.shape[1] * hidden_nodes
-    b2_idx = 10
-    w1 = np.reshape(w[:w1_idx], (hidden_nodes, images.shape[1]))
-    b1 = np.reshape(w[w1_idx:w1_idx+b1_idx], (1, hidden_nodes))
-    w2 = np.reshape(w[w1_idx+b1_idx:w1_idx+b1_idx+w2_idx], (labels.shape[1], hidden_nodes))
-    b2 = np.reshape(w[w1_idx+b1_idx+w2_idx:], (1, 10))
-    h1, y_hat = feedforward(w1, w2, b1, b2, images, labels)
-    gw2, gb2 = grad_layer2(h1, y_hat, w1, w2, images, labels, alpha)
-    gw1, gb1 = grad_layer1(h1, y_hat, w1, w2, images, labels, alpha)
-    final_w = np.concatenate((gw1.flatten(), gb1.flatten(), gw2.flatten(), gb2.flatten()))
-    return final_w
-
-
-
 def feedforward(w1, w2, b1, b2, images, labels):
     x = images
     h1 = relu(x.dot(w1.T) + b1)
@@ -163,12 +133,12 @@ def sgd(train_images, train_labels, val_images, val_labels, h_nodes, epsilon, ba
         # final validation accuracy. These will be heuristics when choosing the best hyperparameters
         return cost_history[-1], validation_acc
 
-    # plt.plot(np.linspace(1, epochs, epochs), cost_history, label="Training Cost")
-    # plt.legend('Cost')
-    # plt.ylabel('Training Cost')
-    # plt.xlabel('Epochs')
-    # plt.title("Cross-entropy cost values")
-    # plt.show()
+    plt.plot(np.linspace(1, epochs, epochs), cost_history, label="Training Cost")
+    plt.legend('Cost')
+    plt.ylabel('Training Cost')
+    plt.xlabel('Epochs')
+    plt.title("Cross-entropy cost values")
+    plt.show()
     return w1, w2, b1, b2
 
 
@@ -196,15 +166,15 @@ def findBestHyperparameters(train_images, train_labels, val_images, val_labels):
     l_rate = [1e-4, 1e-4, 0.001, 0.0005, 0.001, 0.00001, 0.0006, 0.0006, 0.00007, 0.001]
     b_size = [1000, 10000, 50, 125, 500, 275, 88, 40, 625, 25]
     alpha = [0, 0.8, 0.02, 1e2, 5.0, 0.2, 0.3, 0.7, 0.1, 0.9]
-    epochs = 5
+    epochs = [10, 20, 50, 10, 60, 40, 30, 20, 10, 40]
     min_cost = 100
     max_acc = 0
     best = 0
     for i in range(10):
         print ("[%d] Trying parameters - Hidden Nodes: %d Learning Rate: %.6f Batch Size: %d Alpha: %.3f Epochs: %d" % (
-            i, h_nodes[i], l_rate[i], b_size[i], alpha[i], epochs))
+            i, h_nodes[i], l_rate[i], b_size[i], alpha[i], epochs[i]))
         cost, acc = sgd(train_images, train_labels, val_images, val_labels,
-                        h_nodes[i], l_rate[i], b_size[i], epochs, alpha[i], searching=True)
+                        h_nodes[i], l_rate[i], b_size[i], epochs[i], alpha[i], searching=True)
         if cost < min_cost:
             min_cost = cost
             best = i
@@ -212,10 +182,37 @@ def findBestHyperparameters(train_images, train_labels, val_images, val_labels):
             max_acc = acc
             best = i
         print ("Current best parameters - Hidden Nodes: %d Learning Rate: %.6f Batch Size: %d Alpha: %.3f Epochs: %d" %
-               (h_nodes[best], l_rate[best], b_size[best], alpha[best], epochs))
+               (h_nodes[best], l_rate[best], b_size[best], alpha[best], epochs[best]))
 
-    return h_nodes[best], l_rate[best], b_size[best], alpha[best], 20
+    return h_nodes[best], l_rate[best], b_size[best], alpha[best], epochs[best]
 
+#####CHECK GRAD######
+def checkgrad_unpack(w, images, labels):
+    w1_idx = images.shape[1] * hidden_nodes
+    b1_idx = hidden_nodes
+    w2_idx = labels.shape[1] * hidden_nodes
+    b2_idx = 10
+    w1 = np.reshape(w[:w1_idx], (hidden_nodes, images.shape[1]))
+    b1 = np.reshape(w[w1_idx:w1_idx + b1_idx], (1, hidden_nodes))
+    w2 = np.reshape(w[w1_idx + b1_idx:w1_idx + b1_idx + w2_idx], (labels.shape[1], hidden_nodes))
+    b2 = np.reshape(w[w1_idx + b1_idx + w2_idx:], (1, 10))
+    return w1, b1, w2, b2
+
+
+def checkgrad_cost(w, images, labels, alpha=.0):
+    w1, b1, w2, b2 = checkgrad_unpack(w, images, labels)
+    cost = J(w1, w2, b1, b2, images, labels, alpha)
+    return cost
+
+
+def checkgrad_grad(w, images, labels, alpha=.0):
+    w1, b1, w2, b2 = checkgrad_unpack(w, images, labels)
+    h1, y_hat = feedforward(w1, w2, b1, b2, images, labels)
+    gw2, gb2 = grad_layer2(h1, y_hat, w1, w2, images, labels, alpha)
+    gw1, gb1 = grad_layer1(h1, y_hat, w1, w2, images, labels, alpha)
+    final_w = np.concatenate((gw1.flatten(), gb1.flatten(), gw2.flatten(), gb2.flatten()))
+    return final_w
+#####END OF CHECK GRAD######
 
 if __name__ == "__main__":
     # Load data
@@ -230,18 +227,18 @@ if __name__ == "__main__":
     import time
 
     start = time.time()
-    # hidden_nodes, learning_rate, batch_size, ridge_term, epochs = findBestHyperparameters(trainingImages, trainingLabels,
-    #                                                                                       validationImages, validationLabels)
-    hidden_nodes, learning_rate, batch_size, ridge_term, epochs = 48, 0.005, 64, 5.0, 2
+    hidden_nodes, learning_rate, batch_size, ridge_term, epochs = findBestHyperparameters(trainingImages, trainingLabels,
+                                                                                          validationImages, validationLabels)
+    # hidden_nodes, learning_rate, batch_size, ridge_term, epochs = 48, 0.005, 64, 5.0, 2
     print ("Best parameters - Hidden Nodes: %d Learning Rate: %.6f Batch Size: %d Alpha: %.3f Epochs: %d" %
            (hidden_nodes, learning_rate, batch_size, ridge_term, epochs))
     w_1, w_2, b_1, b_2 = sgd(trainingImages, trainingLabels, validationImages, validationLabels,
                              hidden_nodes, learning_rate, batch_size, epochs, ridge_term)
 
-    from scipy.optimize import check_grad
-    checkgrad_w = np.concatenate((w_1.flatten(), b_1.flatten(), w_2.flatten(), b_2.flatten()))
-    print ("Check grad value is ", check_grad(checkgrad_cost, checkgrad_grad, checkgrad_w,
-                                              trainingImages, trainingLabels, 5.0))
+    # from scipy.optimize import check_grad
+    # checkgrad_w = np.concatenate((w_1.flatten(), b_1.flatten(), w_2.flatten(), b_2.flatten()))
+    # print ("Check grad value is ", check_grad(checkgrad_cost, checkgrad_grad, checkgrad_w,
+    #                                           trainingImages, trainingLabels))
 
     dt = int(time.time() - start)
     print("Execution time %d sec" % dt)
