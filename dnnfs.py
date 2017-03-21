@@ -84,10 +84,10 @@ def sgd(train_images, train_labels, val_images, val_labels, h_nodes, epsilon, ba
     classes = y.shape[1]
     cost_history = np.array([])
 
-    w1_range = math.sqrt(2./dimensions)
+    w1_range = math.sqrt(1./dimensions)
     w1 = np.random.uniform(-w1_range, w1_range, (h_nodes, dimensions))
     b1 = np.ones((1, h_nodes)) * 0.1
-    w2_range = math.sqrt(2. / h_nodes)
+    w2_range = math.sqrt(1./h_nodes)
     w2 = np.random.uniform(-w2_range, w2_range, (classes, h_nodes))
     b2 = np.ones((1, classes)) * 0.1
 
@@ -162,15 +162,15 @@ def predict(images, labels, w1, w2, b1, b2):
 
 
 def findBestHyperparameters(train_images, train_labels, val_images, val_labels):
-    h_nodes = [20, 20, 60, 50, 80, 30, 60, 40, 60, 20, 80]
-    l_rate = [0.33, 1e-2, 0.4, 0.15, 0.001, 0.01, 0.006, 0.06, 0.2, 0.007, 0.1]
-    b_size = [100, 250, 50, 125, 500, 275, 88, 40, 100, 625, 25]
-    alpha = [0, 0.8, 0.02, 1e2, 5.0, 0.2, 0.3, 0.7, 0.05, 0.1, 0.9]
-    epochs = [10, 20, 50, 10, 30, 40, 30, 20, 50, 10, 40]
+    h_nodes = [20, 20, 60, 50, 80, 30, 60, 40, 60, 20, 80, 80]
+    l_rate = [0.33, 1e-2, 0.4, 0.15, 0.001, 0.01, 0.006, 0.06, 0.2, 0.007, 0.15, 0.1]
+    b_size = [100, 250, 50, 125, 500, 275, 88, 40, 100, 625, 50, 25]
+    alpha = [0, 0.8, 0.02, 1e2, 5.0, 0.2, 0.3, 0.7, 0.05, 0.1, 0.02, 0.9]
+    epochs = [10, 20, 50, 10, 30, 40, 30, 20, 50, 10, 30, 40]
     min_cost = 100
     max_acc = 0
     best = 0
-    for i in range(11):
+    for i in range(12):
         print ("[%d] Trying parameters - Hidden Nodes: %d Learning Rate: %.6f Batch Size: %d Alpha: %.3f Epochs: %d" % (
             i, h_nodes[i], l_rate[i], b_size[i], alpha[i], epochs[i]))
         cost, acc = sgd(train_images, train_labels, val_images, val_labels,
@@ -229,7 +229,7 @@ if __name__ == "__main__":
     start = time.time()
     hidden_nodes, learning_rate, batch_size, ridge_term, epochs = findBestHyperparameters(trainingImages, trainingLabels,
                                                                                           validationImages, validationLabels)
-    # hidden_nodes, learning_rate, batch_size, ridge_term, epochs = 60, 0.20, 100, 0.05, 50
+
     print ("Best parameters - Hidden Nodes: %d Learning Rate: %.6f Batch Size: %d Alpha: %.3f Epochs: %d" %
            (hidden_nodes, learning_rate, batch_size, ridge_term, epochs))
     w_1, w_2, b_1, b_2 = sgd(trainingImages, trainingLabels, validationImages, validationLabels,
